@@ -31,9 +31,9 @@ export const users = pgTable("users", {
 export const excelFiles = pgTable("excel_files", {
   id: serial("id").primaryKey(),
   fileName: text("file_name").notNull(),
-  fileType: text("file_type").notNull(), // 'document_submittal' or 'shop_drawing'
-  filePath: text("file_path").notNull(),
-  uploadedBy: varchar("uploaded_by").references(() => users.id).notNull(),
+  fileType: text("file_type").notNull(), // 'documents' or 'shop-drawings'
+  fileContent: text("file_content").notNull(), // Base64 encoded Excel file content
+  uploadedBy: varchar("uploaded_by").notNull(),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
   recordCount: integer("record_count").default(0),
   isActive: boolean("is_active").default(true),

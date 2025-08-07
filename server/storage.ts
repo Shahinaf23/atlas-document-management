@@ -34,6 +34,7 @@ export interface IStorage {
   getExcelFiles(): Promise<ExcelFile[]>;
   createExcelFile(file: InsertExcelFile): Promise<ExcelFile>;
   getActiveExcelFile(fileType: string): Promise<ExcelFile | undefined>;
+  deactivateExcelFiles(fileType: string): Promise<void>;
 
   // Document operations
   getAllDocuments(): Promise<Document[]>;
@@ -88,10 +89,12 @@ export class MemStorage implements IStorage {
   private shopDrawings: Map<number, ShopDrawing>;
   private activities: Map<number, Activity>;
   private checkpoints: Map<string, Checkpoint>;
+  private excelFiles: Map<number, ExcelFile>;
   private currentUserId: number;
   private currentDocumentId: number;
   private currentShopDrawingId: number;
   private currentActivityId: number;
+  private currentExcelFileId: number;
 
   constructor() {
     this.users = new Map();
@@ -99,10 +102,12 @@ export class MemStorage implements IStorage {
     this.shopDrawings = new Map();
     this.activities = new Map();
     this.checkpoints = new Map();
+    this.excelFiles = new Map();
     this.currentUserId = 1;
     this.currentDocumentId = 1;
     this.currentShopDrawingId = 1;
     this.currentActivityId = 1;
+    this.currentExcelFileId = 1;
 
     // Initialize with some demo users
     this.initializeDemoData();
@@ -460,6 +465,50 @@ export class MemStorage implements IStorage {
   async deleteCheckpoint(id: string): Promise<void> {
     this.checkpoints.delete(id);
   }
+
+  // Excel file operations (Memory storage - fallback for development)
+  async getExcelFiles(): Promise<ExcelFile[]> {
+    return Array.from(this.excelFiles.values()).sort((a, b) => 
+      (b.uploadedAt?.getTime() || 0) - (a.uploadedAt?.getTime() || 0)
+    );
+  }
+
+  async createExcelFile(file: InsertExcelFile): Promise<ExcelFile> {
+    // Deactivate previous files of same type
+    await this.deactivateExcelFiles(file.fileType);
+    
+    const newFile: ExcelFile = {
+      id: this.currentExcelFileId++,
+      fileName: file.fileName,
+      fileType: file.fileType,
+      fileContent: file.fileContent,
+      uploadedBy: file.uploadedBy,
+      uploadedAt: new Date(),
+      recordCount: file.recordCount || 0,
+      isActive: true,
+    };
+    this.excelFiles.set(newFile.id, newFile);
+    return newFile;
+  }
+
+  async getActiveExcelFile(fileType: string): Promise<ExcelFile | undefined> {
+    const files = Array.from(this.excelFiles.values());
+    for (const file of files) {
+      if (file.fileType === fileType && file.isActive) {
+        return file;
+      }
+    }
+    return undefined;
+  }
+
+  async deactivateExcelFiles(fileType: string): Promise<void> {
+    const files = Array.from(this.excelFiles.values());
+    for (const file of files) {
+      if (file.fileType === fileType) {
+        file.isActive = false;
+      }
+    }
+  }
 }
 
 // Database Storage Implementation
@@ -756,6 +805,42 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCheckpoint(id: string): Promise<void> {
     await db.delete(checkpoints).where(eq(checkpoints.id, id));
+  }
+
+  // Excel file operations implementation
+  async getExcelFiles(): Promise<ExcelFile[]> {
+    return await db.select().from(excelFiles).orderBy(desc(excelFiles.uploadedAt));
+  }
+
+  async createExcelFile(file: InsertExcelFile): Promise<ExcelFile> {
+    // Deactivate previous files of same type
+    await this.deactivateExcelFiles(file.fileType);
+    
+    const [newFile] = await db
+      .insert(excelFiles)
+      .values({
+        ...file,
+        isActive: true,
+      })
+      .returning();
+    return newFile;
+  }
+
+  async getActiveExcelFile(fileType: string): Promise<ExcelFile | undefined> {
+    const [activeFile] = await db
+      .select()
+      .from(excelFiles)
+      .where(and(eq(excelFiles.fileType, fileType), eq(excelFiles.isActive, true)))
+      .orderBy(desc(excelFiles.uploadedAt))
+      .limit(1);
+    return activeFile || undefined;
+  }
+
+  async deactivateExcelFiles(fileType: string): Promise<void> {
+    await db
+      .update(excelFiles)
+      .set({ isActive: false })
+      .where(eq(excelFiles.fileType, fileType));
   }
 }
 

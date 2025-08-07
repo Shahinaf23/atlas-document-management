@@ -18,11 +18,49 @@ export class ExcelService {
     return this.shopDrawingsCache;
   }
 
+  // New method to load from uploaded Excel files in database
+  async loadFromDatabase(): Promise<{ documents: boolean; shopDrawings: boolean }> {
+    try {
+      const { storage } = await import('./storage');
+      
+      // Check for uploaded documents
+      const documentsFile = await storage.getActiveExcelFile('documents');
+      if (documentsFile) {
+        console.log('📄 Loading documents from uploaded Excel file...');
+        await this.loadDocumentsFromBuffer(Buffer.from(documentsFile.fileContent, 'base64'));
+      }
+      
+      // Check for uploaded shop drawings
+      const shopDrawingsFile = await storage.getActiveExcelFile('shop-drawings');
+      if (shopDrawingsFile) {
+        console.log('🏗️ Loading shop drawings from uploaded Excel file...');
+        await this.loadShopDrawingsFromBuffer(Buffer.from(shopDrawingsFile.fileContent, 'base64'));
+      }
+      
+      return {
+        documents: !!documentsFile,
+        shopDrawings: !!shopDrawingsFile
+      };
+    } catch (error) {
+      console.error('❌ Error loading from database:', error);
+      return { documents: false, shopDrawings: false };
+    }
+  }
+
   async forceRefresh(): Promise<void> {
     console.log('🔄 Force refreshing Excel data...');
     try {
-      await this.loadDocumentSubmittals();
-      await this.loadShopDrawings();
+      // First try to load from uploaded files in database
+      const uploadedFiles = await this.loadFromDatabase();
+      
+      // Only load from static files if no uploads exist
+      if (!uploadedFiles.documents) {
+        await this.loadDocumentSubmittals();
+      }
+      if (!uploadedFiles.shopDrawings) {
+        await this.loadShopDrawings();
+      }
+      
       this.lastRefresh = new Date();
       console.log('✅ Excel data refreshed successfully');
     } catch (error) {
@@ -44,6 +82,143 @@ export class ExcelService {
 
     if (timeSinceRefresh > this.refreshInterval) {
       await this.forceRefresh();
+    }
+  }
+
+  // New method to load documents from buffer (for uploaded files)
+  private async loadDocumentsFromBuffer(buffer: Buffer): Promise<void> {
+    // This will process the buffer the same way as loadDocumentSubmittals but from memory
+    console.log('📄 Loading documents from uploaded Excel buffer...');
+    try {
+      const workbook = xlsx.read(buffer, { type: 'buffer' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      // Process worksheet same as loadDocumentSubmittals
+      const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      
+      // Auto-detect header row
+      let headerRowIndex = -1;
+      let headerRow: any[] = [];
+      
+      for (let i = 0; i < Math.min(rawData.length, 15); i++) {
+        const row = rawData[i];
+        if (!row) continue;
+        
+        const rowStr = row.join('|').toUpperCase();
+        if ((rowStr.includes('SN') || rowStr.includes('S.N')) && 
+            (rowStr.includes('DOC') || rowStr.includes('DOCUMENT')) && 
+            (rowStr.includes('STATUS') || rowStr.includes('VENDOR'))) {
+          headerRowIndex = i;
+          headerRow = row;
+          break;
+        }
+      }
+      
+      if (headerRowIndex === -1) {
+        headerRowIndex = 7;
+        headerRow = rawData[7] || [];
+      }
+      
+      // Process documents
+      let documents: any[] = [];
+      const snIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('SN'));
+      const docTypeIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('DOCTYPE') || String(h).toUpperCase().includes('DOCUMENT TYPE'));
+      const docNameIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('DOC_NAME') || String(h).toUpperCase().includes('DOCUMENT NAME'));
+      const vendorIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('VENDOR'));
+      const statusIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('STATUS'));
+      
+      for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0) continue;
+        
+        const docNameValue = row[docNameIndex];
+        if (!docNameValue) continue;
+        
+        const document = {
+          id: documents.length + 1,
+          documentId: row[snIndex] || `UPLOAD-DOC-${documents.length + 1}`,
+          title: String(docNameValue),
+          vendor: row[vendorIndex] || 'Unknown',
+          documentType: row[docTypeIndex] || 'General',
+          currentStatus: row[statusIndex] || '---',
+          submittedDate: new Date(),
+          lastUpdated: new Date(),
+          priority: 'Medium'
+        };
+        
+        documents.push(document);
+      }
+      
+      this.documentsCache = documents;
+      console.log(`✅ Loaded ${documents.length} documents from uploaded file`);
+    } catch (error) {
+      console.error('❌ Error loading documents from buffer:', error);
+      this.documentsCache = [];
+    }
+  }
+
+  // New method to load shop drawings from buffer (for uploaded files)
+  private async loadShopDrawingsFromBuffer(buffer: Buffer): Promise<void> {
+    console.log('🏗️ Loading shop drawings from uploaded Excel buffer...');
+    try {
+      const workbook = xlsx.read(buffer, { type: 'buffer' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      // Process worksheet same as loadShopDrawings
+      const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      
+      // Auto-detect header row
+      let headerRowIndex = -1;
+      let headerRow: any[] = [];
+      
+      for (let i = 0; i < Math.min(rawData.length, 15); i++) {
+        const row = rawData[i];
+        if (!row) continue;
+        
+        const rowStr = row.join('|').toUpperCase();
+        if (rowStr.includes('SN') && (rowStr.includes('SYSTEM') || rowStr.includes('DRAWING'))) {
+          headerRowIndex = i;
+          headerRow = row;
+          break;
+        }
+      }
+      
+      if (headerRowIndex === -1) {
+        headerRowIndex = 7;
+        headerRow = rawData[7] || [];
+      }
+      
+      // Process shop drawings
+      let shopDrawings: any[] = [];
+      const snIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('SN'));
+      const systemIndex = headerRow.findIndex(h => String(h).toUpperCase().includes('SYSTEM'));
+      const statusIndex = 20; // Common status column
+      
+      for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0) continue;
+        
+        const snValue = row[snIndex];
+        if (!snValue) continue;
+        
+        const shopDrawing = {
+          id: shopDrawings.length + 1,
+          drawingId: String(snValue) || `UPLOAD-SD-${shopDrawings.length + 1}`,
+          title: `Shop Drawing ${snValue}`,
+          drawingType: 'General',
+          system: row[systemIndex] || 'Unknown',
+          currentStatus: row[statusIndex] || '---',
+          submittedDate: new Date(),
+          lastUpdated: new Date(),
+          priority: 'Medium'
+        };
+        
+        shopDrawings.push(shopDrawing);
+      }
+      
+      this.shopDrawingsCache = shopDrawings;
+      console.log(`✅ Loaded ${shopDrawings.length} shop drawings from uploaded file`);
+    } catch (error) {
+      console.error('❌ Error loading shop drawings from buffer:', error);
+      this.shopDrawingsCache = [];
     }
   }
 

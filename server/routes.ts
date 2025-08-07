@@ -353,38 +353,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet);
+      // Store the Excel file in database (replaces previous upload)
+      const excelFile = await storage.createExcelFile({
+        fileName: req.file.originalname,
+        fileType: 'documents',
+        fileContent: req.file.buffer.toString('base64'),
+        uploadedBy: 'admin', // TODO: Get from authenticated user
+        recordCount: 0,
+      });
 
-      const documents = data.map((row: any) => ({
-        documentId: row['Document ID'] || row['DOCUMENT ID'] || `DOC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        title: row['Title'] || row['TITLE'] || 'Untitled Document',
-        vendor: row['Vendor'] || row['VENDOR'] || 'Unknown Vendor',
-        documentType: row['Document Type'] || row['TYPE'] || 'General',
-        currentStatus: row['Current Status'] || row['CURRENT STATUS'] || row['LATEST STATUS'] || '---',
-        submittedDate: new Date(row['Submitted Date'] || row['SUBMITTED DATE'] || Date.now()),
-        priority: row['Priority'] || row['PRIORITY'] || 'medium',
-      }));
+      // Force refresh Excel service to load new file
+      await excelService.forceRefresh();
+      const refreshedData = await excelService.refreshAfterUpload();
 
-      const createdDocuments = await storage.bulkCreateDocuments(documents);
-
-      // Create bulk import activity
+      // Create upload activity
       await storage.createActivity({
         type: "document",
-        entityId: "bulk_import",
-        action: "imported",
-        description: `Bulk imported ${createdDocuments.length} documents`,
-        userId: "system", // TODO: Get from authenticated user
+        entityId: "excel_upload",
+        action: "uploaded",
+        description: `Uploaded new document Excel file: ${req.file.originalname}`,
+        userId: "admin", // TODO: Get from authenticated user
       });
 
       res.json({ 
-        message: `Successfully imported ${createdDocuments.length} documents`,
-        documents: createdDocuments 
+        message: `Successfully uploaded ${req.file.originalname} - ${refreshedData.documents} documents now active`,
+        fileId: excelFile.id,
+        documentCount: refreshedData.documents
       });
     } catch (error) {
-      res.status(500).json({ message: "Error importing documents", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Error uploading document file", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
@@ -394,39 +391,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet);
+      // Store the Excel file in database (replaces previous upload)
+      const excelFile = await storage.createExcelFile({
+        fileName: req.file.originalname,
+        fileType: 'shop-drawings',
+        fileContent: req.file.buffer.toString('base64'),
+        uploadedBy: 'admin', // TODO: Get from authenticated user
+        recordCount: 0,
+      });
 
-      const shopDrawings = data.map((row: any) => ({
-        drawingId: row['Drawing ID'] || row['DRAWING ID'] || `SD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        drawingNumber: row['Drawing Number'] || row['DRAWING NUMBER'] || row['Drawing ID'] || row['DRAWING ID'] || 'N/A',
-        system: row['System'] || row['SYSTEM'] || 'General',
-        subSystem: row['Sub System'] || row['SUB SYSTEM'] || row['Sub-System'] || 'General',
-        drawingType: row['Drawing Type'] || row['TYPE'] || 'General',
-        currentStatus: row['Current Status'] || row['CURRENT STATUS'] || row['LATEST STATUS'] || '---',
-        submittedDate: new Date(row['Submitted Date'] || row['SUBMITTED DATE'] || Date.now()),
-        priority: row['Priority'] || row['PRIORITY'] || 'Medium',
-      }));
+      // Force refresh Excel service to load new file
+      await excelService.forceRefresh();
+      const refreshedData = await excelService.refreshAfterUpload();
 
-      const createdShopDrawings = await storage.bulkCreateShopDrawings(shopDrawings);
-
-      // Create bulk import activity
+      // Create upload activity
       await storage.createActivity({
         type: "shop_drawing",
-        entityId: "bulk_import",
-        action: "imported",
-        description: `Bulk imported ${createdShopDrawings.length} shop drawings`,
-        userId: "system", // TODO: Get from authenticated user
+        entityId: "excel_upload",
+        action: "uploaded",
+        description: `Uploaded new shop drawing Excel file: ${req.file.originalname}`,
+        userId: "admin", // TODO: Get from authenticated user
       });
 
       res.json({ 
-        message: `Successfully imported ${createdShopDrawings.length} shop drawings`,
-        shopDrawings: createdShopDrawings 
+        message: `Successfully uploaded ${req.file.originalname} - ${refreshedData.shopDrawings} shop drawings now active`,
+        fileId: excelFile.id,
+        shopDrawingCount: refreshedData.shopDrawings
       });
     } catch (error) {
-      res.status(500).json({ message: "Error importing shop drawings", error: error instanceof Error ? error.message : "Unknown error" });
+      res.status(500).json({ message: "Error uploading shop drawing file", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 
