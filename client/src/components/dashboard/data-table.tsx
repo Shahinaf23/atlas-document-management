@@ -483,32 +483,42 @@ export function DataTable({ data, type, title }: DataTableProps) {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-1">
-                      {isPendingStatus(item.currentStatus) ? (
-                        <>
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                            Not submitted
-                          </div>
-                          <div className="text-xs text-gray-400 dark:text-gray-500">
-                            Pending submission
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {new Date(item.submittedDate).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {(() => {
-                              const daysDiff = Math.floor((new Date().getTime() - new Date(item.submittedDate).getTime()) / (1000 * 60 * 60 * 24));
-                              return `${daysDiff} days ago`;
-                            })()}
-                          </div>
-                        </>
-                      )}
+                      {(() => {
+                        const submittedDate = new Date(item.submittedDate);
+                        const isValidDate = submittedDate.getFullYear() > 2000; // Dates before 2000 are considered invalid/default
+                        const isPending = isPendingStatus(item.currentStatus) || !isValidDate;
+                        
+                        if (isPending) {
+                          return (
+                            <>
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Not submitted
+                              </div>
+                              <div className="text-xs text-gray-400 dark:text-gray-500">
+                                Pending submission
+                              </div>
+                            </>
+                          );
+                        }
+                        
+                        return (
+                          <>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {submittedDate.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {(() => {
+                                const daysDiff = Math.floor((new Date().getTime() - submittedDate.getTime()) / (1000 * 60 * 60 * 24));
+                                return `${daysDiff} days ago`;
+                              })()}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </td>
                   <td className="px-6 py-4">
