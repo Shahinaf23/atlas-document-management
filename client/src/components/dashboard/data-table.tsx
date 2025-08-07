@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Download, ChevronUp, ChevronDown, Eye, Edit2, Trash2, Calendar, Clock } from "lucide-react";
+import { Search, Filter, Download, ChevronUp, ChevronDown, Eye, Edit2, Trash2, Calendar, Clock, Maximize2, Minimize2 } from "lucide-react";
 import { isSubmittedStatusCode, isPendingStatus } from "@shared/schema";
 
 interface DataTableProps {
@@ -24,6 +24,7 @@ export function DataTable({ data, type, title }: DataTableProps) {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [isPending, startTransition] = useTransition();
+  const [isExpanded, setIsExpanded] = useState(false);
   
   // Use deferred values for expensive operations
   const deferredSearchTerm = useDeferredValue(searchTerm);
@@ -262,7 +263,7 @@ export function DataTable({ data, type, title }: DataTableProps) {
   };
 
   return (
-    <Card>
+    <Card className={isExpanded ? "fixed inset-4 z-50 overflow-hidden" : ""}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -271,10 +272,21 @@ export function DataTable({ data, type, title }: DataTableProps) {
               {filteredAndSortedData.length} of {data.length} items
             </CardDescription>
           </div>
-          <Button onClick={handleExport} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => setIsExpanded(!isExpanded)}
+              variant="outline" 
+              className="gap-2"
+              data-testid="button-expand-table"
+            >
+              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isExpanded ? "Collapse" : "Expand"}
+            </Button>
+            <Button onClick={handleExport} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
         
         <div className="flex flex-col md:flex-row gap-4 mt-4">
@@ -344,14 +356,14 @@ export function DataTable({ data, type, title }: DataTableProps) {
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className={isExpanded ? "h-full overflow-hidden" : ""}>
         {isPending && (
           <div className="flex items-center justify-center py-4 text-sm text-gray-500">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-white mr-2"></div>
             Filtering data...
           </div>
         )}
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:bg-gray-950 dark:border-gray-800">
+        <div className={`overflow-x-auto rounded-lg border border-gray-200 bg-white dark:bg-gray-950 dark:border-gray-800 ${isExpanded ? "h-full" : ""}`}>
           <table className="w-full" style={{ opacity: isPending ? 0.7 : 1, transition: 'opacity 0.2s' }}>
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
@@ -385,16 +397,18 @@ export function DataTable({ data, type, title }: DataTableProps) {
                     {getSortIcon(type === "documents" ? "vendor" : "system")}
                   </Button>
                 </th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  <Button 
-                    variant="ghost" 
-                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
-                    onClick={() => handleSort(type === "documents" ? "documentType" : "drawingType")}
-                  >
-                    Type
-                    {getSortIcon(type === "documents" ? "documentType" : "drawingType")}
-                  </Button>
-                </th>
+                {type === "documents" && (
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
+                      onClick={() => handleSort("documentType")}
+                    >
+                      Type
+                      {getSortIcon("documentType")}
+                    </Button>
+                  </th>
+                )}
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <Button 
                     variant="ghost" 
@@ -457,11 +471,13 @@ export function DataTable({ data, type, title }: DataTableProps) {
                       {type === "documents" ? item.vendor : item.system}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {type === "documents" ? item.documentType : item.drawingType}
-                    </div>
-                  </td>
+                  {type === "documents" && (
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        {item.documentType}
+                      </div>
+                    </td>
+                  )}
                   <td className="px-6 py-4">
                     {getStatusBadge(item.currentStatus)}
                   </td>
@@ -475,16 +491,6 @@ export function DataTable({ data, type, title }: DataTableProps) {
                         <Clock className="h-3 w-3" />
                         <span>Updated {new Date(item.lastUpdated).toLocaleDateString()}</span>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={`w-fit text-xs ${
-                          item.priority === "High" ? "border-red-200 text-red-700 bg-red-50" :
-                          item.priority === "Medium" ? "border-yellow-200 text-yellow-700 bg-yellow-50" :
-                          "border-green-200 text-green-700 bg-green-50"
-                        }`}
-                      >
-                        {item.priority} Priority
-                      </Badge>
                     </div>
                   </td>
                   <td className="px-6 py-4">
