@@ -483,19 +483,32 @@ export function DataTable({ data, type, title }: DataTableProps) {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-1">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {new Date(item.submittedDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {(() => {
-                          const daysDiff = Math.floor((new Date().getTime() - new Date(item.submittedDate).getTime()) / (1000 * 60 * 60 * 24));
-                          return `${daysDiff} days ago`;
-                        })()}
-                      </div>
+                      {isPendingStatus(item.currentStatus) ? (
+                        <>
+                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Not submitted
+                          </div>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
+                            Pending submission
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {new Date(item.submittedDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {(() => {
+                              const daysDiff = Math.floor((new Date().getTime() - new Date(item.submittedDate).getTime()) / (1000 * 60 * 60 * 24));
+                              return `${daysDiff} days ago`;
+                            })()}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
