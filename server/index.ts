@@ -57,16 +57,13 @@ app.use((req, res, next) => {
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
+  // Other ports are firewalled. Default to 10000 for Render compatibility.
   // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, async () => {
+  const port = parseInt(process.env.PORT || '10000', 10);
+  
+  server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
+    console.log(`Server running on http://0.0.0.0:${port}`);
     
     // Initialize Excel service for cloud deployment (skip Python preprocessing)
     try {
