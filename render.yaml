@@ -3,11 +3,7 @@ services:
     name: atlas-document-management
     runtime: node
     plan: free
-    buildCommand: |
-      # Install Python packages
-      python3 -m pip install --user pandas openpyxl numpy
-      # Install Node.js dependencies and build
-      npm install && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
@@ -15,8 +11,6 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: PYTHONPATH
-        value: /opt/render/project/.local/lib/python3.11/site-packages
       - key: DATABASE_URL
         fromDatabase:
           name: atlas-postgres
