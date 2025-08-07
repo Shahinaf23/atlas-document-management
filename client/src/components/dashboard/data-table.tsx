@@ -181,7 +181,7 @@ export function DataTable({ data, type, title }: DataTableProps) {
   const getStatusBadge = (status: string) => {
     if (isPendingStatus(status) || status === "---") {
       return (
-        <Badge className="bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 transition-colors font-medium px-3 py-1">
+        <Badge className="bg-slate-200 text-slate-800 border-slate-300 hover:bg-slate-300 transition-colors font-bold px-3 py-1 shadow-sm">
           Pending
         </Badge>
       );
@@ -190,49 +190,49 @@ export function DataTable({ data, type, title }: DataTableProps) {
     switch (status) {
       case "CODE1":
         return (
-          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 transition-colors font-medium px-3 py-1">
-            ✓ Approved
+          <Badge className="bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Approved
           </Badge>
         );
       case "CODE2":
         return (
-          <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 transition-colors font-medium px-3 py-1">
-            ⚠ Approved w/ Comments
+          <Badge className="bg-blue-400 text-white border-blue-500 hover:bg-blue-500 transition-colors font-bold px-3 py-1 shadow-sm">
+            Approved with Comments
           </Badge>
         );
       case "CODE3":
         return (
-          <Badge className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors font-medium px-3 py-1">
-            ↻ Revise & Resubmit
+          <Badge className="bg-orange-500 text-white border-orange-600 hover:bg-orange-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Revise & Resubmit
           </Badge>
         );
       case "UR(ATJV)":
         return (
-          <Badge className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 transition-colors font-medium px-3 py-1">
-            🔍 Under Review (ATJV)
+          <Badge className="bg-purple-500 text-white border-purple-600 hover:bg-purple-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Under Review by ATJV
           </Badge>
         );
       case "AR(ATJV)":
         return (
-          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors font-medium px-3 py-1">
-            📋 Advance Review (ATJV)
+          <Badge className="bg-indigo-500 text-white border-indigo-600 hover:bg-indigo-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Advance Review by ATJV
           </Badge>
         );
       case "UR(DAR)":
         return (
-          <Badge className="bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100 transition-colors font-medium px-3 py-1">
-            🔍 Under Review (DAR)
+          <Badge className="bg-cyan-500 text-white border-cyan-600 hover:bg-cyan-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Under Review by DAR
           </Badge>
         );
       case "RTN(ATLS)":
         return (
-          <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors font-medium px-3 py-1">
-            ⬅ Return to Atlas
+          <Badge className="bg-red-500 text-white border-red-600 hover:bg-red-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Return to Atlas
           </Badge>
         );
       default:
         return (
-          <Badge className="bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 transition-colors font-medium px-3 py-1">
+          <Badge className="bg-gray-500 text-white border-gray-600 hover:bg-gray-600 transition-colors font-bold px-3 py-1 shadow-sm">
             {status}
           </Badge>
         );
@@ -445,13 +445,13 @@ export function DataTable({ data, type, title }: DataTableProps) {
                   data-testid={`row-${type}-${type === "documents" ? item.documentId : item.drawingId}`}
                 >
                   <td className="px-6 py-4">
-                    <div className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <div className="font-mono text-sm font-bold text-gray-900 dark:text-gray-100">
                       {type === "documents" ? item.documentId : item.drawingId}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="max-w-sm">
-                      <div className="font-medium text-gray-900 dark:text-gray-100 break-words leading-5">
+                      <div className="font-bold text-gray-900 dark:text-gray-100 break-words leading-5">
                         {type === "documents" ? item.title : item.drawingNumber}
                       </div>
                       {type === "documents" && item.category && (
@@ -483,13 +483,18 @@ export function DataTable({ data, type, title }: DataTableProps) {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(item.submittedDate).toLocaleDateString()}</span>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {new Date(item.submittedDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <Clock className="h-3 w-3" />
-                        <span>Updated {new Date(item.lastUpdated).toLocaleDateString()}</span>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {(() => {
+                          const daysDiff = Math.floor((new Date().getTime() - new Date(item.submittedDate).getTime()) / (1000 * 60 * 60 * 24));
+                          return `${daysDiff} days ago`;
+                        })()}
                       </div>
                     </div>
                   </td>
