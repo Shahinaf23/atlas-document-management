@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Download, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Filter, Download, ChevronUp, ChevronDown, Eye, Edit2, Trash2, Calendar, Clock } from "lucide-react";
 import { isSubmittedStatusCode, isPendingStatus } from "@shared/schema";
 
 interface DataTableProps {
@@ -178,22 +178,63 @@ export function DataTable({ data, type, title }: DataTableProps) {
   };
 
   const getStatusBadge = (status: string) => {
-    if (isPendingStatus(status)) {
-      return <Badge variant="secondary" className="bg-gray-100 text-gray-800">{status}</Badge>;
+    if (isPendingStatus(status) || status === "---") {
+      return (
+        <Badge className="bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 transition-colors font-medium px-3 py-1">
+          Pending
+        </Badge>
+      );
     }
     
     switch (status) {
       case "CODE1":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">CODE1</Badge>;
+        return (
+          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 transition-colors font-medium px-3 py-1">
+            ✓ Approved
+          </Badge>
+        );
       case "CODE2":
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">CODE2</Badge>;
+        return (
+          <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 transition-colors font-medium px-3 py-1">
+            ⚠ Approved w/ Comments
+          </Badge>
+        );
       case "CODE3":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">CODE3</Badge>;
+        return (
+          <Badge className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 transition-colors font-medium px-3 py-1">
+            ↻ Revise & Resubmit
+          </Badge>
+        );
+      case "UR(ATJV)":
+        return (
+          <Badge className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 transition-colors font-medium px-3 py-1">
+            🔍 Under Review (ATJV)
+          </Badge>
+        );
+      case "AR(ATJV)":
+        return (
+          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors font-medium px-3 py-1">
+            📋 Advance Review (ATJV)
+          </Badge>
+        );
+      case "UR(DAR)":
+        return (
+          <Badge className="bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100 transition-colors font-medium px-3 py-1">
+            🔍 Under Review (DAR)
+          </Badge>
+        );
+      case "RTN(ATLS)":
+        return (
+          <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 transition-colors font-medium px-3 py-1">
+            ⬅ Return to Atlas
+          </Badge>
+        );
       default:
-        if (status?.includes("UR") || status?.includes("AR")) {
-          return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">{status}</Badge>;
-        }
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <Badge className="bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 transition-colors font-medium px-3 py-1">
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -310,166 +351,172 @@ export function DataTable({ data, type, title }: DataTableProps) {
             Filtering data...
           </div>
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse" style={{ opacity: isPending ? 0.7 : 1, transition: 'opacity 0.2s' }}>
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-3 font-medium">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white dark:bg-gray-950 dark:border-gray-800">
+          <table className="w-full" style={{ opacity: isPending ? 0.7 : 1, transition: 'opacity 0.2s' }}>
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <Button 
                     variant="ghost" 
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
                     onClick={() => handleSort(type === "documents" ? "documentId" : "drawingId")}
                   >
                     {type === "documents" ? "Document ID" : "Drawing ID"}
                     {getSortIcon(type === "documents" ? "documentId" : "drawingId")}
                   </Button>
                 </th>
-                <th className="text-left p-3 font-medium">
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <Button 
                     variant="ghost" 
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
                     onClick={() => handleSort(type === "documents" ? "title" : "drawingNumber")}
                   >
-                    {type === "documents" ? "Title" : "Drawing Number"}
+                    Title
                     {getSortIcon(type === "documents" ? "title" : "drawingNumber")}
                   </Button>
                 </th>
-                {type === "documents" && (
-                  <th className="text-left p-3 font-medium">
-                    <Button 
-                      variant="ghost" 
-                      className="h-auto p-0 font-medium hover:bg-transparent"
-                      onClick={() => handleSort("vendor")}
-                    >
-                      Vendor
-                      {getSortIcon("vendor")}
-                    </Button>
-                  </th>
-                )}
-                {type === "shop-drawings" && (
-                  <th className="text-left p-3 font-medium">
-                    <Button 
-                      variant="ghost" 
-                      className="h-auto p-0 font-medium hover:bg-transparent"
-                      onClick={() => handleSort("system")}
-                    >
-                      System
-                      {getSortIcon("system")}
-                    </Button>
-                  </th>
-                )}
-                {type === "shop-drawings" && (
-                  <th className="text-left p-3 font-medium">
-                    <Button 
-                      variant="ghost" 
-                      className="h-auto p-0 font-medium hover:bg-transparent"
-                      onClick={() => handleSort("subSystem")}
-                    >
-                      Sub-System
-                      {getSortIcon("subSystem")}
-                    </Button>
-                  </th>
-                )}
-                {type === "documents" && (
-                  <th className="text-left p-3 font-medium">
-                    <Button 
-                      variant="ghost" 
-                      className="h-auto p-0 font-medium hover:bg-transparent"
-                      onClick={() => handleSort("category")}
-                    >
-                      Category
-                      {getSortIcon("category")}
-                    </Button>
-                  </th>
-                )}
-                {type === "documents" && (
-                  <th className="text-left p-3 font-medium">
-                    <Button 
-                      variant="ghost" 
-                      className="h-auto p-0 font-medium hover:bg-transparent"
-                      onClick={() => handleSort("documentType")}
-                    >
-                      Type
-                      {getSortIcon("documentType")}
-                    </Button>
-                  </th>
-                )}
-
-                <th className="text-left p-3 font-medium">
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <Button 
                     variant="ghost" 
-                    className="h-auto p-0 font-medium hover:bg-transparent"
+                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
+                    onClick={() => handleSort(type === "documents" ? "vendor" : "system")}
+                  >
+                    {type === "documents" ? "Vendor" : "System"}
+                    {getSortIcon(type === "documents" ? "vendor" : "system")}
+                  </Button>
+                </th>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
+                    onClick={() => handleSort(type === "documents" ? "documentType" : "drawingType")}
+                  >
+                    Type
+                    {getSortIcon(type === "documents" ? "documentType" : "drawingType")}
+                  </Button>
+                </th>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
                     onClick={() => handleSort("currentStatus")}
                   >
                     Status
                     {getSortIcon("currentStatus")}
                   </Button>
                 </th>
-                <th className="text-left p-3 font-medium">
-                  <Button 
-                    variant="ghost" 
-                    className="h-auto p-0 font-medium hover:bg-transparent"
-                    onClick={() => handleSort("priority")}
-                  >
-                    Priority
-                    {getSortIcon("priority")}
-                  </Button>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
+                      onClick={() => handleSort("submittedDate")}
+                    >
+                      Submission Timeline
+                      {getSortIcon("submittedDate")}
+                    </Button>
+                  </div>
                 </th>
-                <th className="text-left p-3 font-medium">
-                  <Button 
-                    variant="ghost" 
-                    className="h-auto p-0 font-medium hover:bg-transparent"
-                    onClick={() => handleSort("submittedDate")}
-                  >
-                    Submitted
-                    {getSortIcon("submittedDate")}
-                  </Button>
+                <th className="text-center px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Actions
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {filteredAndSortedData.map((item, index) => (
                 <tr 
                   key={`${type}-${index}-${type === "documents" ? item.documentId : item.drawingId}`} 
-                  className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-white dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-900'}`}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                  data-testid={`row-${type}-${type === "documents" ? item.documentId : item.drawingId}`}
                 >
-                  <td className="p-3 font-mono text-sm">
-                    {type === "documents" ? item.documentId : item.drawingId}
-                  </td>
-                  <td className="p-3 max-w-xs break-words whitespace-normal">
-                    <div className="break-words hyphens-auto">
-                      {type === "documents" ? item.title : item.drawingNumber}
+                  <td className="px-6 py-4">
+                    <div className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400">
+                      {type === "documents" ? item.documentId : item.drawingId}
                     </div>
                   </td>
-                  {type === "documents" && (
-                    <td className="p-3">{item.vendor}</td>
-                  )}
-                  {type === "shop-drawings" && (
-                    <td className="p-3">{item.system}</td>
-                  )}
-                  {type === "shop-drawings" && (
-                    <td className="p-3">{item.subSystem}</td>
-                  )}
-                  {type === "documents" && (
-                    <td className="p-3">{item.category}</td>
-                  )}
-                  {type === "documents" && (
-                    <td className="p-3">{item.documentType}</td>
-                  )}
-                  <td className="p-3">
+                  <td className="px-6 py-4">
+                    <div className="max-w-sm">
+                      <div className="font-medium text-gray-900 dark:text-gray-100 break-words leading-5">
+                        {type === "documents" ? item.title : item.drawingNumber}
+                      </div>
+                      {type === "documents" && item.category && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {item.category}
+                        </div>
+                      )}
+                      {type === "shop-drawings" && item.subSystem && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {item.subSystem}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {type === "documents" ? item.vendor : item.system}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                      {type === "documents" ? item.documentType : item.drawingType}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     {getStatusBadge(item.currentStatus)}
                   </td>
-                  <td className="p-3">
-                    <Badge variant="outline" className={
-                      item.priority === "High" ? "border-red-300 text-red-800" :
-                      item.priority === "Medium" ? "border-yellow-300 text-yellow-800" :
-                      "border-green-300 text-green-800"
-                    }>
-                      {item.priority}
-                    </Badge>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <Calendar className="h-3 w-3" />
+                        <span>{new Date(item.submittedDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <Clock className="h-3 w-3" />
+                        <span>Updated {new Date(item.lastUpdated).toLocaleDateString()}</span>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`w-fit text-xs ${
+                          item.priority === "High" ? "border-red-200 text-red-700 bg-red-50" :
+                          item.priority === "Medium" ? "border-yellow-200 text-yellow-700 bg-yellow-50" :
+                          "border-green-200 text-green-700 bg-green-50"
+                        }`}
+                      >
+                        {item.priority} Priority
+                      </Badge>
+                    </div>
                   </td>
-                  <td className="p-3 text-sm text-muted-foreground">
-                    {new Date(item.submittedDate).toLocaleDateString()}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        data-testid={`button-view-${type === "documents" ? item.documentId : item.drawingId}`}
+                        title="View details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                        data-testid={`button-edit-${type === "documents" ? item.documentId : item.drawingId}`}
+                        title="Edit item"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        data-testid={`button-delete-${type === "documents" ? item.documentId : item.drawingId}`}
+                        title="Delete item"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
