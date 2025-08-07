@@ -21,10 +21,6 @@ services:
         fromDatabase:
           name: atlas-postgres
           property: connectionString
-    disk:
-      name: atlas-uploads
-      mountPath: /opt/render/project/src/uploads
-      sizeGB: 1
 
 databases:
   - name: atlas-postgres
