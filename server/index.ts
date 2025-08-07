@@ -68,10 +68,16 @@ app.use((req, res, next) => {
   }, async () => {
     log(`serving on port ${port}`);
     
-    // Initialize real-time Excel service on startup
-    const { excelService } = await import('./excel-service-new');
-    setTimeout(() => {
-      excelService.forceRefresh();
-    }, 2000); // Give the server a moment to fully start
+    // Initialize Excel service for cloud deployment (skip Python preprocessing)
+    try {
+      const { excelService } = await import('./excel-service-new');
+      setTimeout(() => {
+        excelService.forceRefresh().catch(err => {
+          console.log('Excel service initialization skipped for cloud deployment:', err.message);
+        });
+      }, 2000);
+    } catch (error) {
+      console.log('Excel service not available in cloud deployment, using fallback data');
+    }
   });
 })();

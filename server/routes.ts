@@ -26,6 +26,11 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Health check endpoint for Render
+  app.get("/", (req, res) => {
+    res.json({ status: "ok", message: "Atlas Document Management System is running" });
+  });
+  
   // Authentication routes
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -57,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entityId: String(viewerUser.id),
           action: "login",
           description: `Viewer ${viewerUser.username} logged in`,
-          userId: parseInt(viewerUser.id),
+          userId: String(viewerUser.id),
         });
 
         return res.json({ user: viewerUser });
