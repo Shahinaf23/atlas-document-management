@@ -26,8 +26,8 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Health check endpoint for Render
-  app.get("/", (req, res) => {
+  // Health check endpoint for Render (moved to /health)
+  app.get("/health", (req, res) => {
     res.json({ status: "ok", message: "Atlas Document Management System is running" });
   });
   
