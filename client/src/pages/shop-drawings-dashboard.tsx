@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 export default function ShopDrawingsDashboard() {
   const { data: shopDrawings = [], isLoading, error, refetch } = useQuery({
     queryKey: ['/api/shop-drawings'],
-    refetchInterval: 300000, // 5 minutes - consistent across tabs
-    staleTime: 180000, // Consider data fresh for 3 minutes
-    gcTime: 600000, // Keep in cache for 10 minutes
+    refetchInterval: 600000, // 10 minutes - reduced frequency for initial load performance
+    staleTime: 300000, // Consider data fresh for 5 minutes
+    gcTime: 1200000, // Keep in cache for 20 minutes
   });
 
   const { data: activitiesData = [] } = useQuery({
@@ -45,12 +45,21 @@ export default function ShopDrawingsDashboard() {
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 max-w-7xl">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600"></div>
+            <PenTool className="h-8 w-8 text-purple-600 absolute inset-0 m-auto" />
+          </div>
+          <div className="mt-6 text-center">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Loading Shop Drawings Dashboard
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              Processing Excel data and generating analytics...
+            </p>
+            <div className="text-sm text-gray-500 dark:text-gray-500">
+              This may take a few moments for large datasets
+            </div>
           </div>
         </div>
       </div>
