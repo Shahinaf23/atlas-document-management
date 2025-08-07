@@ -96,6 +96,7 @@ export default function ShopDrawingsDashboard() {
           </h2>
         </div>
         <AnalyticsCharts 
+          data={Array.isArray(shopDrawings) ? shopDrawings : []}
           documents={[]} 
           shopDrawings={Array.isArray(shopDrawings) ? shopDrawings : []} 
           type="shop-drawings" 

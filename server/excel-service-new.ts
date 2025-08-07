@@ -223,7 +223,21 @@ export class ExcelService {
       
     } catch (error) {
       console.error('❌ Error loading document submittals:', error);
-      this.documentsCache = [];
+      console.log('📝 Using fallback document data for cloud deployment');
+      // Provide fallback data to prevent blank pages
+      this.documentsCache = [
+        {
+          id: 1,
+          documentId: 'DEMO-001',
+          title: 'Sample Document (Excel files not deployed)',
+          vendor: 'Demo Vendor',
+          documentType: 'General',
+          currentStatus: '---',
+          submittedDate: new Date(),
+          lastUpdated: new Date(),
+          priority: 'Medium'
+        }
+      ];
     }
   }
 
@@ -366,7 +380,20 @@ export class ExcelService {
       
     } catch (error) {
       console.error('❌ Error loading shop drawings:', error);
-      this.shopDrawingsCache = [];
+      console.log('📝 Using fallback shop drawing data for cloud deployment');
+      // Provide fallback data to prevent blank pages
+      this.shopDrawingsCache = [
+        {
+          id: 1,
+          drawingId: 'SD-DEMO-001',
+          title: 'Sample Shop Drawing (Excel files not deployed)',
+          drawingType: 'General',
+          currentStatus: '---',
+          submittedDate: new Date(),
+          lastUpdated: new Date(),
+          priority: 'Medium'
+        }
+      ];
     }
   }
 }
