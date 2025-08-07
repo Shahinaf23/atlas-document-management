@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pythonlibs/
+__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Uploads and data
+uploads/
+csv-data/
+*.csv
+*.xlsx
+!attached_assets/*.xlsx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Electron
+out/
+electron-builder.env
+
+# Production builds
+electron/dist/
