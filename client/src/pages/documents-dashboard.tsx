@@ -12,6 +12,8 @@ export default function DocumentsDashboard() {
     refetchInterval: 600000, // 10 minutes - reduced frequency for initial load performance
     staleTime: 300000, // Consider data fresh for 5 minutes
     gcTime: 1200000, // Keep in cache for 20 minutes
+    refetchOnMount: "always", // Always try to refetch on mount for fresh data
+    refetchOnReconnect: "always", // Refetch on reconnect
   });
 
   const { data: activitiesData = [] } = useQuery({
@@ -19,6 +21,7 @@ export default function DocumentsDashboard() {
     refetchInterval: 600000, // 10 minutes for activities
     staleTime: 300000, // Consider data fresh for 5 minutes
     gcTime: 1200000, // Keep in cache for 20 minutes
+    refetchOnMount: false, // Don't refetch activities on mount - use cache for faster load
   });
 
   const handleRefresh = async () => {
@@ -42,29 +45,61 @@ export default function DocumentsDashboard() {
     .filter((activity: any) => activity.type === 'document')
     .slice(0, 5);
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6 max-w-7xl">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600"></div>
-            <FileText className="h-8 w-8 text-purple-600 absolute inset-0 m-auto" />
-          </div>
-          <div className="mt-6 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Loading Documents Dashboard
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              Processing Excel data and generating analytics...
-            </p>
-            <div className="text-sm text-gray-500 dark:text-gray-500">
-              This may take a few moments for large datasets
+  // Skeleton components for loading states
+  const SkeletonOverview = () => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="p-6">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const SkeletonChart = () => (
+    <Card>
+      <CardHeader>
+        <div className="animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="animate-pulse">
+          <div className="bg-gray-200 rounded h-[280px]"></div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const SkeletonTable = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Document Submissions Log</CardTitle>
+        <CardDescription>
+          Real-time document tracking from Excel files
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[400px] overflow-y-auto border rounded-lg">
+          <div className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-10 bg-gray-200 rounded"></div>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-200 rounded"></div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      </CardContent>
+    </Card>
+  );
 
   if (error) {
     return (
@@ -90,11 +125,15 @@ export default function DocumentsDashboard() {
     <div className="container mx-auto p-6 max-w-7xl space-y-8">
 
       {/* Overview Cards */}
-      <OverviewCards 
-        documents={Array.isArray(documents) ? documents : []} 
-        shopDrawings={[]} 
-        type="documents" 
-      />
+      {isLoading ? (
+        <SkeletonOverview />
+      ) : (
+        <OverviewCards 
+          documents={Array.isArray(documents) ? documents : []} 
+          shopDrawings={[]} 
+          type="documents" 
+        />
+      )}
 
       {/* Analytics Charts */}
       <div className="space-y-6">
@@ -104,32 +143,40 @@ export default function DocumentsDashboard() {
             Analytics & Insights
           </h2>
         </div>
-        <AnalyticsCharts 
-          data={Array.isArray(documents) ? documents : []}
-          documents={Array.isArray(documents) ? documents : []} 
-          shopDrawings={[]} 
-          type="documents" 
-        />
+        {isLoading ? (
+          <SkeletonChart />
+        ) : (
+          <AnalyticsCharts 
+            data={Array.isArray(documents) ? documents : []}
+            documents={Array.isArray(documents) ? documents : []} 
+            shopDrawings={[]} 
+            type="documents" 
+          />
+        )}
       </div>
 
       {/* Document Submissions Log - Scrollable */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Document Submissions Log</CardTitle>
-          <CardDescription>
-            Real-time document tracking from Excel files
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] overflow-y-auto border rounded-lg">
-            <DataTable 
-              data={Array.isArray(documents) ? documents : []} 
-              type="documents" 
-              title="" 
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {isLoading ? (
+        <SkeletonTable />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Document Submissions Log</CardTitle>
+            <CardDescription>
+              Real-time document tracking from Excel files
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[400px] overflow-y-auto border rounded-lg">
+              <DataTable 
+                data={Array.isArray(documents) ? documents : []} 
+                type="documents" 
+                title="" 
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

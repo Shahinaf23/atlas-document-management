@@ -14,6 +14,8 @@ export default function AnalyticsDashboard() {
     refetchInterval: 300000, // 5 minutes - less aggressive
     staleTime: 180000, // Consider data fresh for 3 minutes
     gcTime: 600000, // Keep in cache for 10 minutes
+    refetchOnMount: "always", // Always try to refetch on mount
+    refetchOnReconnect: "always", // Refetch on reconnect
   });
 
   const { data: shopDrawingsData = [], isLoading: shopDrawingsLoading, refetch: refetchShopDrawings } = useQuery({
@@ -21,6 +23,8 @@ export default function AnalyticsDashboard() {
     refetchInterval: 300000, // 5 minutes - less aggressive
     staleTime: 180000, // Consider data fresh for 3 minutes
     gcTime: 600000, // Keep in cache for 10 minutes
+    refetchOnMount: "always", // Always try to refetch on mount
+    refetchOnReconnect: "always", // Refetch on reconnect
   });
 
   const { data: activitiesData = [] } = useQuery({
@@ -28,9 +32,8 @@ export default function AnalyticsDashboard() {
     refetchInterval: 600000, // 10 minutes for activities
     staleTime: 300000, // Consider data fresh for 5 minutes
     gcTime: 1200000, // Keep in cache for 20 minutes
+    refetchOnMount: false, // Don't refetch activities on mount - use cache
   });
-
-  const isLoading = documentsLoading || shopDrawingsLoading;
 
   const handleRefresh = async () => {
     try {
@@ -49,7 +52,7 @@ export default function AnalyticsDashboard() {
     }
   };
 
-  // Type-safe data arrays
+  // Type-safe data arrays - show empty arrays immediately, don't wait
   const documents = Array.isArray(documentsData) ? documentsData : [];
   const shopDrawings = Array.isArray(shopDrawingsData) ? shopDrawingsData : [];
   const activities = Array.isArray(activitiesData) ? activitiesData : [];
@@ -227,257 +230,299 @@ export default function AnalyticsDashboard() {
       };
     });
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6 max-w-7xl">
+  // Skeleton component for loading states
+  const SkeletonCard = ({ className = "" }: { className?: string }) => (
+    <Card className={className}>
+      <CardContent className="p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+          <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="h-3 bg-gray-200 rounded w-2/3"></div>
         </div>
-      </div>
-    );
-  }
+      </CardContent>
+    </Card>
+  );
+
+  const SkeletonChart = ({ height = "320px" }: { height?: string }) => (
+    <Card>
+      <CardHeader>
+        <div className="animate-pulse">
+          <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="animate-pulse">
+          <div className={`bg-gray-200 rounded`} style={{ height }}></div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="container mx-auto p-6 max-w-7xl space-y-8">
 
       {/* Key Performance Indicators */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-            <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{totalItems}</div>
-            <p className="text-xs text-muted-foreground">
-              {documents.length} documents, {shopDrawings.length} shop drawings
-            </p>
-          </CardContent>
-        </Card>
+        {documentsLoading || shopDrawingsLoading ? (
+          // Show skeleton cards while loading
+          <>
+            <SkeletonCard className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800" />
+            <SkeletonCard className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800" />
+            <SkeletonCard className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-800" />
+            <SkeletonCard className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-200 dark:border-orange-800" />
+          </>
+        ) : (
+          // Show actual data once loaded
+          <>
+            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+                <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{totalItems}</div>
+                <p className="text-xs text-muted-foreground">
+                  {documents.length} documents, {shopDrawings.length} shop drawings
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Submitted</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{totalSubmitted}</div>
-            <p className="text-xs text-muted-foreground">
-              Documents in review process
-            </p>
-          </CardContent>
-        </Card>
+            <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Submitted</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">{totalSubmitted}</div>
+                <p className="text-xs text-muted-foreground">
+                  Documents in review process
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{totalPending}</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting submission
-            </p>
-          </CardContent>
-        </Card>
+            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{totalPending}</div>
+                <p className="text-xs text-muted-foreground">
+                  Awaiting submission
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-200 dark:border-orange-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Under Review</CardTitle>
-            <Eye className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{totalUnderReview}</div>
-            <p className="text-xs text-muted-foreground">
-              {underReviewDocuments} documents, {underReviewShopDrawings} shop drawings
-            </p>
-          </CardContent>
-        </Card>
+            <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-200 dark:border-orange-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Under Review</CardTitle>
+                <Eye className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{totalUnderReview}</div>
+                <p className="text-xs text-muted-foreground">
+                  {underReviewDocuments} documents, {underReviewShopDrawings} shop drawings
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Charts Grid */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Status Distribution Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Status Distribution</CardTitle>
-            <CardDescription>
-              Current status breakdown for all documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[320px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusDistributionData}
-                    cx="50%"
-                    cy="45%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="count"
-                    label={false}
-                  >
-                    {statusDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    content={({ active, payload }: any) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-                            <p className="font-semibold">{data.fullName}</p>
-                            <p className="text-purple-600">Count: {data.count}</p>
-                            <p className="text-gray-600">{data.percentage}% of total</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Legend at bottom */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
-              {statusDistributionData.map((entry, index) => (
-                <div key={entry.name} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  <span className="text-xs text-gray-700 dark:text-gray-300">
-                    {entry.name} {entry.count} ({entry.percentage}%)
-                  </span>
+        {documentsLoading || shopDrawingsLoading ? (
+          // Show skeleton charts while loading
+          <>
+            <SkeletonChart />
+            <SkeletonChart />
+          </>
+        ) : (
+          // Show actual charts once loaded
+          <>
+            {/* Status Distribution Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Status Distribution</CardTitle>
+                <CardDescription>
+                  Current status breakdown for all documents
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusDistributionData}
+                        cx="50%"
+                        cy="45%"
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="count"
+                        label={false}
+                      >
+                        {statusDistributionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
+                                <p className="font-semibold">{data.fullName}</p>
+                                <p className="text-purple-600">Count: {data.count}</p>
+                                <p className="text-gray-600">{data.percentage}% of total</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                
+                {/* Legend at bottom */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
+                  {statusDistributionData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-xs text-gray-700 dark:text-gray-300">
+                        {entry.name} {entry.count} ({entry.percentage}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Document vs Shop Drawing Status Comparison */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Types Overview</CardTitle>
-            <CardDescription>
-              Distribution of documents vs shop drawings
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[320px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
-                  data={[
-                    { type: 'Documents', count: documents.length, color: '#8b5cf6' },
-                    { type: 'Shop Drawings', count: shopDrawings.length, color: '#06b6d4' }
-                  ]}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="type" />
-                  <YAxis />
-                  <Tooltip 
-                    content={({ active, payload }: any) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-                            <p className="font-semibold">{data.type}</p>
-                            <p className="text-purple-600">Count: {data.count}</p>
-                            <p className="text-gray-600">{Math.round((data.count / totalItems) * 100)}% of total</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar dataKey="count">
-                    {[
-                      { type: 'Documents', count: documents.length, color: '#8b5cf6' },
-                      { type: 'Shop Drawings', count: shopDrawings.length, color: '#06b6d4' }
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{documents.length}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Documents</div>
-              </div>
-              <div className="text-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">{shopDrawings.length}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Shop Drawings</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Document vs Shop Drawing Status Comparison */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Document Types Overview</CardTitle>
+                <CardDescription>
+                  Distribution of documents vs shop drawings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={[
+                        { type: 'Documents', count: documents.length, color: '#8b5cf6' },
+                        { type: 'Shop Drawings', count: shopDrawings.length, color: '#06b6d4' }
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="type" />
+                      <YAxis />
+                      <Tooltip 
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
+                                <p className="font-semibold">{data.type}</p>
+                                <p className="text-purple-600">Count: {data.count}</p>
+                                <p className="text-gray-600">{Math.round((data.count / totalItems) * 100)}% of total</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar dataKey="count">
+                        {[
+                          { type: 'Documents', count: documents.length, color: '#8b5cf6' },
+                          { type: 'Shop Drawings', count: shopDrawings.length, color: '#06b6d4' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {/* Summary stats */}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{documents.length}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Documents</div>
+                  </div>
+                  <div className="text-center p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">{shopDrawings.length}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Shop Drawings</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Daily Submission Trends Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily Submission Trends (Last 7 Days)</CardTitle>
-          <CardDescription>
-            Real document submissions extracted from Excel files by date
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={11} />
-                <YAxis fontSize={11} />
-                <Tooltip 
-                  content={({ active, payload, label }: any) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-                          <p className="font-semibold">{label}</p>
-                          <p className="text-purple-600">Documents: {payload[0]?.value || 0}</p>
-                          <p className="text-cyan-600">Shop Drawings: {payload[1]?.value || 0}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="documents" 
-                  stackId="1" 
-                  stroke="#8b5cf6" 
-                  fill="#8b5cf6" 
-                  fillOpacity={0.6}
-                  name="Documents Submitted"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="shopDrawings" 
-                  stackId="1" 
-                  stroke="#06b6d4" 
-                  fill="#06b6d4" 
-                  fillOpacity={0.6}
-                  name="Shop Drawings"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {documentsLoading || shopDrawingsLoading ? (
+        <SkeletonChart height="280px" />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Daily Submission Trends (Last 7 Days)</CardTitle>
+            <CardDescription>
+              Real document submissions extracted from Excel files by date
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={weeklyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip 
+                    content={({ active, payload, label }: any) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
+                            <p className="font-semibold">{label}</p>
+                            <p className="text-purple-600">Documents: {payload[0]?.value || 0}</p>
+                            <p className="text-cyan-600">Shop Drawings: {payload[1]?.value || 0}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="documents" 
+                    stackId="1" 
+                    stroke="#8b5cf6" 
+                    fill="#8b5cf6" 
+                    fillOpacity={0.6}
+                    name="Documents Submitted"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="shopDrawings" 
+                    stackId="1" 
+                    stroke="#06b6d4" 
+                    fill="#06b6d4" 
+                    fillOpacity={0.6}
+                    name="Shop Drawings"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
 
 
