@@ -197,7 +197,7 @@ export function DataTable({ data, type, title }: DataTableProps) {
       case "CODE2":
         return (
           <Badge className="bg-blue-400 text-white border-blue-500 hover:bg-blue-500 transition-colors font-bold px-3 py-1 shadow-sm">
-            Approved with Comments
+            Approved w/ Comments
           </Badge>
         );
       case "CODE3":
