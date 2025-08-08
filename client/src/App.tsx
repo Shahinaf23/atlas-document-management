@@ -13,10 +13,17 @@ function Router() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Always start with login page - do not restore sessions automatically
-    // This ensures every user must authenticate on each visit
-    localStorage.removeItem('atlas_user');
-    setUser(null);
+    // Restore user session from localStorage if available
+    const savedUser = localStorage.getItem('atlas_user');
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Failed to parse saved user:', error);
+        localStorage.removeItem('atlas_user');
+      }
+    }
   }, []);
 
   const handleLogin = (user: User) => {

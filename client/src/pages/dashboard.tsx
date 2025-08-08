@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut, ChevronDown } from "lucide-react";
 import {
@@ -50,10 +50,19 @@ const tabConfigs: Record<TabType, TabConfig> = {
 };
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    // Restore active tab from localStorage, default to "overview"
+    const savedTab = localStorage.getItem('atlas_active_tab');
+    return (savedTab as TabType) || "overview";
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('atlas_active_tab', activeTab);
+  }, [activeTab]);
 
   const currentConfig = tabConfigs[activeTab];
 
