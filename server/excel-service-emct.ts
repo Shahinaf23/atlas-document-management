@@ -164,31 +164,38 @@ export class EmctExcelService {
         const discipline = String(row[5] || '').trim();
         const system = String(row[12] || '').trim();
         const subSystem = String(row[13] || '').trim();
-        const drawingName = String(row[16] || '').trim();
+        let drawingName = String(row[16] || '').trim();
         
-        console.log(`🔍 Processing EMCT shop row ${i}: building=${building}, system=${system}, drawing=${drawingName.substring(0, 30)}`);
+        console.log(`🔍 Processing EMCT shop row ${i}: building="${building}", system="${system}", drawing="${drawingName.substring(0, 30)}"`);
         
         // Skip if no meaningful data
-        if (!building || !drawingName || building.length < 3) continue;
-        if (building.toLowerCase().includes('building') && building.length < 10) continue;
-        
-        // Look for status
-        for (let col = 20; col < Math.min(row.length, 40); col++) {
-          const cellValue = String(row[col] || '').trim().toLowerCase();
-          if (cellValue.includes('under review') || cellValue.includes('ur')) {
-            status = 'UR';
-            break;
-          } else if (cellValue.includes('approved')) {
-            status = 'CODE1';
-            break;
-          } else if (cellValue.includes('returned')) {
-            status = 'RTN';
-            break;
-          }
+        if (!building || building.length < 3) {
+          console.log(`⏭️ Skipping row ${i}: building too short: "${building}"`);
+          continue;
+        }
+        if (building.toLowerCase().includes('building') && building.length < 10) {
+          console.log(`⏭️ Skipping row ${i}: generic building name: "${building}"`);
+          continue;
+        }
+        if (!drawingName || drawingName.length < 5) {
+          console.log(`⏭️ Skipping row ${i}: drawing name too short: "${drawingName}"`);
+          continue;
         }
         
-        if (!drawingName) {
-          drawingName = `${building} - ${discipline} Drawing`;
+        // Look for status in column 26 based on logs analysis
+        let drawingStatus = 'UR'; // Default to UR as seen in logs
+        const statusCell = String(row[26] || '').trim().toLowerCase();
+        if (statusCell.includes('approved') || statusCell.includes('code1')) {
+          drawingStatus = 'CODE1';
+        } else if (statusCell.includes('returned') || statusCell.includes('rtn')) {
+          drawingStatus = 'RTN';
+        } else if (statusCell.includes('pending')) {
+          drawingStatus = 'PENDING';
+        }
+        
+        // Ensure we have a valid drawing name
+        if (!drawingName || drawingName.length < 5) {
+          drawingName = `${building} - ${system || discipline} Drawing`;
         }
         
         processedShopDrawings.push({
@@ -196,7 +203,7 @@ export class EmctExcelService {
           drawingId: `EMCT-SD-${processedCount + 1}`,
           serialNumber: processedCount + 1,
           drawingName: drawingName,
-          status: status,
+          status: drawingStatus,
           system: system || discipline || 'General',
           building: building,
           program: program,
@@ -215,7 +222,7 @@ export class EmctExcelService {
             building: building,
             system: system || discipline,
             name: drawingName.substring(0, 50),
-            status: status
+            status: drawingStatus
           });
         }
       }
