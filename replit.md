@@ -18,7 +18,15 @@ The frontend is built with React 18 and TypeScript, using Tailwind CSS with shad
 The system provides a robust authentication system with role-based access control and email-based permissions. It manages documents and shop drawings with status tracking (e.g., CODE1, CODE2, CODE3, UR(ATJV), AR(ATJV), UR(DAR), RTN(ATLS)) and priority levels. Real-time data processing from Excel files is central, with automatic and manual refresh options. An analytics dashboard offers real-time status distribution charts, timeline visualizations, and activity logging. The system is designed for local development with network access and self-hosting capabilities, and features comprehensive responsive design.
 
 ### System Design Choices
-The application follows a clear separation of concerns between frontend and backend. Data is primarily sourced directly from Excel files in real-time, eliminating a persistent database cache for main document data. PostgreSQL (Neon Database) is used only for user sessions and activities, with Drizzle ORM for type-safe queries. The system includes dynamic column mapping for Excel processing, handling various header and status formats. It's designed for standalone desktop deployment using Electron, providing cross-platform executables with an embedded web server and robust error handling.
+The application follows a clear separation of concerns between frontend and backend. Data is primarily sourced directly from Excel files in real-time with persistent in-memory caching for optimal performance. The system maintains Excel data loaded in memory with automatic initialization and refresh capabilities. PostgreSQL (Neon Database) is used for user sessions and activities, with Drizzle ORM for type-safe queries. The system includes dynamic column mapping for Excel processing, handling various header and status formats for both Jeddah and EMCT projects. Frontend uses aggressive data refresh strategies with reduced stale times and frequent refetch intervals to ensure dashboard data consistency. It's designed for standalone desktop deployment using Electron, providing cross-platform executables with an embedded web server and robust error handling.
+
+## Recent Changes (August 13, 2025)
+- Fixed EMCT Excel parsing JavaScript errors that prevented frontend data display
+- Implemented persistent data caching with automatic initialization on first request
+- Enhanced frontend query configuration with aggressive refresh strategies (10-second intervals)
+- Resolved EMCT admin upload functionality with alternative busboy-based file handling
+- Improved analytics dashboard loading states and error handling
+- Verified data persistence: Jeddah (111 documents, 1279 shop drawings), EMCT (68 documents, 170 shop drawings)
 
 ## External Dependencies
 

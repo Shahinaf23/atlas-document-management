@@ -697,56 +697,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // EMCT Admin upload route with no field restrictions
-  app.post("/api/emct/admin/upload", multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }).any(), async (req, res) => {
+  // EMCT Upload route - simplified with manual file parsing
+  app.post("/api/emct/upload-file", async (req, res) => {
     try {
-      const uploadedFiles = req.files as Express.Multer.File[];
-      if (!uploadedFiles || uploadedFiles.length === 0) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      const req_file = uploadedFiles[0];
+      let body: Buffer[] = [];
+      let fileName = '';
+      let fileBuffer: Buffer | null = null;
 
-      // Validate file type
-      if (!req_file.originalname.toLowerCase().endsWith('.xlsx') && 
-          !req_file.originalname.toLowerCase().endsWith('.xls')) {
-        return res.status(400).json({ 
-          message: "Please check your file format and try again. Only Excel files (.xlsx, .xls) are supported." 
-        });
-      }
-
-      const fileType = req.body.fileType || 'document_submittal';
-      console.log(`📤 EMCT Admin upload: ${req_file.originalname} (${fileType})`);
-      console.log(`📋 File details: Size=${req_file.size}, MimeType=${req_file.mimetype}`);
-      
-      // Save file to attached_assets (replacing existing EMCT files)
-      const fs = require('fs');
-      const path = require('path');
-      const targetPath = path.join(process.cwd(), 'attached_assets', req_file.originalname);
-      
-      fs.writeFileSync(targetPath, req_file.buffer);
-      console.log(`💾 Saved EMCT file to: ${targetPath}`);
-      
-      // Force refresh EMCT Excel service
-      const refreshedData = await emctExcelService.refreshAfterUpload();
-
-      // Log activity
-      await storage.createActivity({
-        type: fileType === 'document_submittal' ? "document" : "shop_drawing",
-        entityId: "emct_excel_upload",
-        action: "uploaded",
-        description: `Uploaded new EMCT ${fileType} Excel file: ${req.file.originalname}`,
-        userId: "admin",
+      req.on('data', (chunk: Buffer) => {
+        body.push(chunk);
       });
 
-      res.json({ 
-        message: `Successfully uploaded ${req_file.originalname}`,
-        recordCount: refreshedData.documents + refreshedData.shopDrawings,
-        validation: { errors: 0 },
-        stats: refreshedData
+      req.on('end', async () => {
+        const fullBody = Buffer.concat(body);
+        const contentType = req.headers['content-type'] || '';
+        
+        if (!contentType.includes('multipart/form-data')) {
+          return res.status(400).json({ message: "Invalid content type" });
+        }
+
+        // Simple multipart parsing to extract file
+        const bodyStr = fullBody.toString();
+        const fileMatch = bodyStr.match(/filename="([^"]+)"/);
+        if (fileMatch) {
+          fileName = fileMatch[1];
+        }
+
+        // Find the file data after the headers
+        const boundary = contentType.split('boundary=')[1];
+        if (boundary && fileName) {
+          const parts = fullBody.toString('binary').split('--' + boundary);
+          for (const part of parts) {
+            if (part.includes('filename=')) {
+              const headerEnd = part.indexOf('\r\n\r\n');
+              if (headerEnd > -1) {
+                const fileData = part.substring(headerEnd + 4);
+                // Remove trailing boundary
+                const cleanData = fileData.replace(/\r\n--.*$/, '');
+                fileBuffer = Buffer.from(cleanData, 'binary');
+                break;
+              }
+            }
+          }
+        }
+
+        if (!fileBuffer || !fileName) {
+          return res.status(400).json({ message: "No file uploaded or file parsing failed" });
+        }
+
+        // Validate file type
+        if (!fileName.toLowerCase().endsWith('.xlsx') && 
+            !fileName.toLowerCase().endsWith('.xls')) {
+          return res.status(400).json({ 
+            message: "Please check your file format and try again. Only Excel files (.xlsx, .xls) are supported." 
+          });
+        }
+
+        console.log(`📤 EMCT Admin upload: ${fileName} (Size: ${fileBuffer.length})`);
+        
+        // Save file to attached_assets
+        const fs = await import('fs');
+        const path = await import('path');
+        const targetPath = path.join(process.cwd(), 'attached_assets', fileName);
+        
+        fs.writeFileSync(targetPath, fileBuffer);
+        console.log(`💾 Saved EMCT file to: ${targetPath}`);
+        
+        // Force refresh EMCT Excel service
+        const refreshedData = await emctExcelService.refreshAfterUpload();
+
+        // Log activity
+        await storage.createActivity({
+          type: "document",
+          entityId: "emct_excel_upload",
+          action: "uploaded",
+          description: `Uploaded new EMCT Excel file: ${fileName}`,
+          userId: "admin",
+        });
+
+        res.json({ 
+          message: `Successfully uploaded ${fileName}`,
+          recordCount: refreshedData.documents + refreshedData.shopDrawings,
+          validation: { errors: 0 },
+          stats: refreshedData
+        });
       });
       
     } catch (error) {
-      console.error('❌ EMCT Admin upload error:', error);
+      console.error('❌ EMCT upload error:', error);
       res.status(500).json({ 
         message: "Error uploading EMCT file", 
         error: error instanceof Error ? error.message : "Unknown error" 

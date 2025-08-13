@@ -18,23 +18,21 @@ export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDash
   const shopDrawingsEndpoint = project === 'emct' ? '/api/emct/shop-drawings' : '/api/shop-drawings';
   
   const { data: documentsData = [], isLoading: documentsLoading, refetch: refetchDocuments, error: documentsError } = useQuery({
-    queryKey: [documentsEndpoint, project],
-    refetchInterval: 30000, // 30 seconds - more frequent
-    staleTime: 10000, // Consider data fresh for 10 seconds only
-    gcTime: 300000, // Keep in cache for 5 minutes
-    refetchOnMount: true, // Always refetch on mount
-    refetchOnReconnect: true, // Refetch on reconnect
-    retry: 3,
+    queryKey: [documentsEndpoint],
+    enabled: true,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   const { data: shopDrawingsData = [], isLoading: shopDrawingsLoading, refetch: refetchShopDrawings, error: shopDrawingsError } = useQuery({
-    queryKey: [shopDrawingsEndpoint, project],
-    refetchInterval: 30000, // 30 seconds - more frequent
-    staleTime: 10000, // Consider data fresh for 10 seconds only
-    gcTime: 300000, // Keep in cache for 5 minutes
-    refetchOnMount: true, // Always refetch on mount
-    refetchOnReconnect: true, // Refetch on reconnect
-    retry: 3,
+    queryKey: [shopDrawingsEndpoint],
+    enabled: true,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   const { data: activitiesData = [] } = useQuery({

@@ -48,7 +48,7 @@ export default function AdminUpload({ project = "jeddah" }: AdminUploadProps) {
       }, 200);
 
       try {
-        const uploadEndpoint = project === 'emct' ? '/api/emct/admin/upload' : '/api/admin/upload-excel';
+        const uploadEndpoint = project === 'emct' ? '/api/emct/upload-file' : '/api/admin/upload-excel';
         const response = await fetch(uploadEndpoint, {
           method: 'POST',
           body: formData,
