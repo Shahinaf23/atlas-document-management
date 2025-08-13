@@ -13,14 +13,20 @@ interface DocumentsDashboardProps {
 export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDashboardProps) {
   const documentsEndpoint = project === 'emct' ? '/api/emct/documents' : '/api/documents';
   
+  console.log('DocumentsDashboard - project:', project, 'endpoint:', documentsEndpoint);
+  
   const { data: documents = [], isLoading, error, refetch } = useQuery({
     queryKey: [documentsEndpoint],
     enabled: true,
-    staleTime: 0, // Always fetch fresh data
+    staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
+    retry: 3,
+    retryDelay: 1000,
   });
+  
+  console.log('DocumentsDashboard - data:', documents?.length, 'loading:', isLoading, 'error:', error);
 
   const { data: activitiesData = [] } = useQuery({
     queryKey: ['/api/activities'],
@@ -109,6 +115,7 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
   );
 
   if (error) {
+    console.error('Documents dashboard error:', error);
     return (
       <div className="container mx-auto p-6 max-w-7xl">
         <div className="text-center py-12">
@@ -117,7 +124,7 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
             Failed to Load Documents
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Unable to retrieve document data. Please try again.
+            Error: {error instanceof Error ? error.message : 'Unknown error'}
           </p>
           <Button onClick={handleRefresh} className="gap-2">
             <RefreshCw className="h-4 w-4" />
