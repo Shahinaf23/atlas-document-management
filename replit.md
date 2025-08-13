@@ -23,10 +23,13 @@ The application follows a clear separation of concerns between frontend and back
 ## Recent Changes (August 13, 2025)
 - Fixed EMCT Excel parsing JavaScript errors that prevented frontend data display
 - Implemented persistent data caching with automatic initialization on first request
-- Enhanced frontend query configuration with aggressive refresh strategies (10-second intervals)
-- Resolved EMCT admin upload functionality with alternative busboy-based file handling
+- Enhanced frontend query configuration with aggressive refresh strategies (10-second intervals) across all dashboards
+- Resolved EMCT admin upload functionality with custom multipart file parsing solution
+- Extended full data display functionality to document logs and shop drawing logs for South Terminal
 - Improved analytics dashboard loading states and error handling
+- Applied consistent query client configuration to all dashboard pages for real-time updates
 - Verified data persistence: Jeddah (111 documents, 1279 shop drawings), EMCT (68 documents, 170 shop drawings)
+- All South Terminal dashboards now display complete Excel data with overview cards, analytics charts, and data tables
 
 ## External Dependencies
 

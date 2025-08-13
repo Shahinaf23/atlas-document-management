@@ -14,12 +14,12 @@ export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawin
   const shopDrawingsEndpoint = project === 'emct' ? '/api/emct/shop-drawings' : '/api/shop-drawings';
   
   const { data: shopDrawings = [], isLoading, error, refetch } = useQuery({
-    queryKey: [shopDrawingsEndpoint, project],
-    refetchInterval: 600000, // 10 minutes - reduced frequency for initial load performance
-    staleTime: 300000, // Consider data fresh for 5 minutes
-    gcTime: 1200000, // Keep in cache for 20 minutes
-    refetchOnMount: "always", // Always try to refetch on mount for fresh data
-    refetchOnReconnect: "always", // Refetch on reconnect
+    queryKey: [shopDrawingsEndpoint],
+    enabled: true,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   const { data: activitiesData = [] } = useQuery({

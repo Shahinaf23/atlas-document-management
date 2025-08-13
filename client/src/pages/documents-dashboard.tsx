@@ -14,12 +14,12 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
   const documentsEndpoint = project === 'emct' ? '/api/emct/documents' : '/api/documents';
   
   const { data: documents = [], isLoading, error, refetch } = useQuery({
-    queryKey: [documentsEndpoint, project],
-    refetchInterval: 600000, // 10 minutes - reduced frequency for initial load performance
-    staleTime: 300000, // Consider data fresh for 5 minutes
-    gcTime: 1200000, // Keep in cache for 20 minutes
-    refetchOnMount: "always", // Always try to refetch on mount for fresh data
-    refetchOnReconnect: "always", // Refetch on reconnect
+    queryKey: [documentsEndpoint],
+    enabled: true,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
   const { data: activitiesData = [] } = useQuery({
