@@ -9,7 +9,11 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
-export default function AdminUpload() {
+interface AdminUploadProps {
+  project: string;
+}
+
+export default function AdminUpload({ project = "jeddah" }: AdminUploadProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -44,7 +48,8 @@ export default function AdminUpload() {
       }, 200);
 
       try {
-        const response = await fetch('/api/admin/upload-excel', {
+        const uploadEndpoint = project === 'emct' ? '/api/emct/admin/upload' : '/api/admin/upload-excel';
+        const response = await fetch(uploadEndpoint, {
           method: 'POST',
           body: formData,
         });
@@ -77,9 +82,12 @@ export default function AdminUpload() {
         description: `Excel file uploaded successfully. Processed ${data.recordCount} records with ${data.validation?.errors || 0} warnings.`,
       });
 
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/shop-drawings'] });
+      // Invalidate queries to refresh data based on project
+      const documentsKey = project === 'emct' ? '/api/emct/documents' : '/api/documents';
+      const shopDrawingsKey = project === 'emct' ? '/api/emct/shop-drawings' : '/api/shop-drawings';
+      
+      queryClient.invalidateQueries({ queryKey: [documentsKey] });
+      queryClient.invalidateQueries({ queryKey: [shopDrawingsKey] });
       
       setTimeout(() => {
         setUploadStatus('idle');

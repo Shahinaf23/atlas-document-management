@@ -1,5 +1,6 @@
-import { FileText, FileImage, BarChart3, Building, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileText, FileImage, BarChart3, Building, Upload, ChevronLeft, ChevronRight, FolderOpen, Folder, ChevronDown } from "lucide-react";
 import type { User } from "@shared/schema";
+import { useState } from "react";
 
 interface SidebarProps {
   user: User;
@@ -10,14 +11,55 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-const menuItems = [
-  { id: "overview", label: "Analytics & Overview", icon: BarChart3 },
-  { id: "documents", label: "Document Logs", icon: FileText },
-  { id: "shop-drawings", label: "Shop Drawings", icon: FileImage },
-  { id: "admin", label: "Admin Upload", icon: Upload, adminOnly: true },
+interface ProjectFolder {
+  id: string;
+  name: string;
+  items: MenuItem[];
+}
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  adminOnly?: boolean;
+  project: string;
+}
+
+const projectFolders: ProjectFolder[] = [
+  {
+    id: "jeddah",
+    name: "South Terminal - Jeddah Project",
+    items: [
+      { id: "jeddah-overview", label: "Analytics & Overview", icon: BarChart3, project: "jeddah" },
+      { id: "jeddah-documents", label: "Document Logs", icon: FileText, project: "jeddah" },
+      { id: "jeddah-shop-drawings", label: "Shop Drawings", icon: FileImage, project: "jeddah" },
+      { id: "jeddah-admin", label: "Admin Upload", icon: Upload, adminOnly: true, project: "jeddah" },
+    ]
+  },
+  {
+    id: "emct",
+    name: "EMCT Cargo-ZIA",
+    items: [
+      { id: "emct-overview", label: "Analytics & Overview", icon: BarChart3, project: "emct" },
+      { id: "emct-documents", label: "Document Logs", icon: FileText, project: "emct" },
+      { id: "emct-shop-drawings", label: "Shop Drawings", icon: FileImage, project: "emct" },
+      { id: "emct-admin", label: "Admin Upload", icon: Upload, adminOnly: true, project: "emct" },
+    ]
+  }
 ];
 
 export default function Sidebar({ user, activeTab, onTabChange, onClose, isCollapsed = false, onToggleCollapse }: SidebarProps) {
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['jeddah', 'emct'])); // Both folders expanded by default
+
+  const toggleFolder = (folderId: string) => {
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
+  };
 
   if (isCollapsed) {
     return null; // Completely hide sidebar when collapsed
@@ -42,6 +84,7 @@ export default function Sidebar({ user, activeTab, onTabChange, onClose, isColla
           <button
             onClick={onClose}
             className="lg:hidden text-white hover:text-gray-300 p-1"
+            data-testid="button-close-mobile"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -53,45 +96,75 @@ export default function Sidebar({ user, activeTab, onTabChange, onClose, isColla
             <button
               onClick={onToggleCollapse}
               className="hidden lg:block text-white hover:text-gray-300 p-1 hover:bg-white hover:bg-opacity-10 rounded-lg transition-colors"
+              data-testid="button-collapse-desktop"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        {/* Navigation */}
-        <nav className="space-y-2">
-          {menuItems.map((item) => {
-            // Hide admin-only items for unauthorized users
-            if (item.adminOnly && user.role !== "admin" && user.role !== "project manager") {
-              return null;
-            }
-            
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            
-            return (
+        {/* Project Folders Navigation */}
+        <nav className="space-y-1">
+          {projectFolders.map((folder) => (
+            <div key={folder.id} className="space-y-1">
+              {/* Folder Header */}
               <button
-                key={item.id}
-                onClick={() => {
-                  onTabChange(item.id);
-                  onClose(); // Close mobile sidebar
-                }}
-                className={`w-full flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                  isActive
-                    ? 'bg-white bg-opacity-10 text-white'
-                    : 'text-gray-300 hover:bg-white hover:bg-opacity-10 hover:text-white'
-                }`}
+                onClick={() => toggleFolder(folder.id)}
+                className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-300 hover:text-white hover:bg-white hover:bg-opacity-5 rounded-lg transition-colors group"
+                data-testid={`button-folder-${folder.id}`}
               >
-                <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span className="text-sm sm:text-base truncate">{item.label}</span>
+                <div className="flex items-center space-x-2 flex-1">
+                  {expandedFolders.has(folder.id) ? (
+                    <FolderOpen className="w-4 h-4 flex-shrink-0" />
+                  ) : (
+                    <Folder className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <span className="text-xs sm:text-sm font-medium truncate">{folder.name}</span>
+                </div>
+                <ChevronDown 
+                  className={`w-4 h-4 flex-shrink-0 transition-transform ${
+                    expandedFolders.has(folder.id) ? 'rotate-180' : ''
+                  }`} 
+                />
               </button>
-            );
-          })}
+
+              {/* Folder Contents */}
+              {expandedFolders.has(folder.id) && (
+                <div className="ml-4 space-y-1">
+                  {folder.items.map((item) => {
+                    // Hide admin-only items for unauthorized users
+                    if (item.adminOnly && user.role !== "admin" && user.role !== "project manager") {
+                      return null;
+                    }
+                    
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onTabChange(item.id);
+                          onClose(); // Close mobile sidebar
+                        }}
+                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-white bg-opacity-15 text-white'
+                            : 'text-gray-400 hover:bg-white hover:bg-opacity-10 hover:text-white'
+                        }`}
+                        data-testid={`button-${item.id}`}
+                      >
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </nav>
       </div>
-
-
     </div>
   );
 }

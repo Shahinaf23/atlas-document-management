@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import { storage } from "./storage";
 import { excelService } from "./excel-service-new";
+import { emctExcelService } from "./excel-service-emct";
 import { loginSchema, documentFilterSchema, shopDrawingFilterSchema, insertDocumentSchema, insertShopDrawingSchema } from "@shared/schema";
 import adminRoutes from "./routes/admin";
 import csvRoutes from "./routes/csv";
@@ -223,6 +224,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // EMCT Project Routes - Real-time Excel data
+  app.get("/api/emct/documents", async (req, res) => {
+    try {
+      const documents = await emctExcelService.getDocuments();
+      const filters = documentFilterSchema.parse(req.query);
+      
+      // Apply filters to real-time Excel data
+      let filteredDocuments = documents;
+      
+      if (filters.status) {
+        filteredDocuments = filteredDocuments.filter(doc => doc.status === filters.status);
+      }
+      if (filters.vendor) {
+        filteredDocuments = filteredDocuments.filter(doc => doc.vendor === filters.vendor);
+      }
+      if (filters.documentType) {
+        filteredDocuments = filteredDocuments.filter(doc => doc.category === filters.documentType);
+      }
+      
+      res.json(filteredDocuments);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid filter parameters", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/emct/shop-drawings", async (req, res) => {
+    try {
+      const shopDrawings = await emctExcelService.getShopDrawings();
+      const filters = shopDrawingFilterSchema.parse(req.query);
+      
+      // Apply filters to real-time Excel data
+      let filteredShopDrawings = shopDrawings;
+      
+      if (filters.status) {
+        filteredShopDrawings = filteredShopDrawings.filter(sd => sd.status === filters.status);
+      }
+      if (filters.drawingType) {
+        filteredShopDrawings = filteredShopDrawings.filter(sd => sd.system === filters.drawingType);
+      }
+      
+      res.json(filteredShopDrawings);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid filter parameters", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // EMCT Admin upload endpoints
+  app.post("/api/emct/admin/upload", upload.fields([
+    { name: 'documents', maxCount: 1 },
+    { name: 'shopDrawings', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      let uploadResults: any = {};
+
+      if (files.documents && files.documents[0]) {
+        // Save document file
+        const docFile = files.documents[0];
+        const docPath = `attached_assets/Document Submittal Log-RAQ_${Date.now()}.xlsx`;
+        await require('fs/promises').writeFile(docPath, docFile.buffer);
+        uploadResults.documents = { filename: docFile.originalname, path: docPath };
+      }
+
+      if (files.shopDrawings && files.shopDrawings[0]) {
+        // Save shop drawing file
+        const sdFile = files.shopDrawings[0];
+        const sdPath = `attached_assets/Shop Drawing Log - RAQ (Updated)_${Date.now()}.xlsx`;
+        await require('fs/promises').writeFile(sdPath, sdFile.buffer);
+        uploadResults.shopDrawings = { filename: sdFile.originalname, path: sdPath };
+      }
+
+      // Force refresh EMCT Excel data
+      const stats = await emctExcelService.refreshAfterUpload();
+
+      res.json({
+        message: "EMCT files uploaded successfully",
+        uploadResults,
+        stats
+      });
+    } catch (error) {
+      console.error('EMCT Upload error:', error);
+      res.status(500).json({ 
+        message: "Upload failed", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  // EMCT data refresh endpoint
+  app.post("/api/emct/refresh", async (req, res) => {
+    try {
+      await emctExcelService.forceRefresh();
+      const documents = await emctExcelService.getDocuments();
+      const shopDrawings = await emctExcelService.getShopDrawings();
+      
+      res.json({
+        message: "EMCT data refreshed successfully",
+        stats: {
+          documents: documents.length,
+          shopDrawings: shopDrawings.length
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        message: "Refresh failed", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Analytics routes - Real-time Excel data
   app.get("/api/analytics/overview", async (req, res) => {
     try {
@@ -316,6 +427,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(vendorDistribution);
     } catch (error) {
       res.status(500).json({ message: "Error fetching vendor performance", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // EMCT Analytics routes - Real-time Excel data
+  app.get("/api/emct/analytics/overview", async (req, res) => {
+    try {
+      // Get real-time data from EMCT Excel files
+      const documents = await emctExcelService.getDocuments();
+      const shopDrawings = await emctExcelService.getShopDrawings();
+      const activeUserCount = await storage.getActiveUserCount() || 0;
+
+      // Calculate real-time status counts from Excel data
+      const documentStatusCounts: Record<string, number> = {};
+      documents.forEach(doc => {
+        const status = doc.status || 'PENDING';
+        documentStatusCounts[status] = (documentStatusCounts[status] || 0) + 1;
+      });
+
+      const shopDrawingStatusCounts: Record<string, number> = {};
+      shopDrawings.forEach(sd => {
+        const status = sd.status || 'PENDING';
+        shopDrawingStatusCounts[status] = (shopDrawingStatusCounts[status] || 0) + 1;
+      });
+
+      // Calculate vendor distribution from real-time data
+      const vendorDistribution: Record<string, number> = {};
+      [...documents, ...shopDrawings].forEach(item => {
+        const vendor = item.vendor || 'Unknown';
+        vendorDistribution[vendor] = (vendorDistribution[vendor] || 0) + 1;
+      });
+
+      // Calculate metrics with real-time data
+      const totalDocuments = documents.length;
+      const pendingDocuments = documentStatusCounts["PENDING"] || 0;
+      const submittedDocuments = Math.max(0, totalDocuments - pendingDocuments);
+      const underReviewDocuments = (documentStatusCounts["UR"] || 0) + (documentStatusCounts["UNDER REVIEW"] || 0);
+
+      const metrics = {
+        activeDocuments: submittedDocuments,
+        pendingDocuments,
+        underReview: underReviewDocuments,
+        activeUsers: activeUserCount,
+        totalDocuments,
+        documentStatusCounts,
+        shopDrawingStatusCounts,
+        vendorDistribution,
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("EMCT Analytics error:", error);
+      // Return safe defaults if there's an error
+      res.json({
+        activeDocuments: 0,
+        pendingDocuments: 0,
+        underReview: 0,
+        activeUsers: 0,
+        totalDocuments: 0,
+        documentStatusCounts: {},
+        shopDrawingStatusCounts: {},
+        vendorDistribution: {},
+      });
+    }
+  });
+
+  app.get("/api/emct/analytics/status-distribution", async (req, res) => {
+    try {
+      const documents = await emctExcelService.getDocuments();
+      const shopDrawings = await emctExcelService.getShopDrawings();
+      
+      const statusCounts: Record<string, number> = {};
+      [...documents, ...shopDrawings].forEach(item => {
+        const status = item.status || 'PENDING';
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+      
+      res.json(statusCounts);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching EMCT status distribution", error: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  app.get("/api/emct/analytics/vendor-performance", async (req, res) => {
+    try {
+      const documents = await emctExcelService.getDocuments();
+      const shopDrawings = await emctExcelService.getShopDrawings();
+      
+      const vendorDistribution: Record<string, number> = {};
+      [...documents, ...shopDrawings].forEach(item => {
+        const vendor = item.vendor || 'Unknown';
+        vendorDistribution[vendor] = (vendorDistribution[vendor] || 0) + 1;
+      });
+      
+      res.json(vendorDistribution);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching EMCT vendor performance", error: error instanceof Error ? error.message : "Unknown error" });
     }
   });
 

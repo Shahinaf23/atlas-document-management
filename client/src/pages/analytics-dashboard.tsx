@@ -8,9 +8,17 @@ import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { isSubmittedStatusCode, isPendingStatus } from "@shared/schema";
 
-export default function AnalyticsDashboard() {
+interface AnalyticsDashboardProps {
+  project: string;
+}
+
+export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDashboardProps) {
+  // Determine API endpoints based on project
+  const documentsEndpoint = project === 'emct' ? '/api/emct/documents' : '/api/documents';
+  const shopDrawingsEndpoint = project === 'emct' ? '/api/emct/shop-drawings' : '/api/shop-drawings';
+  
   const { data: documentsData = [], isLoading: documentsLoading, refetch: refetchDocuments } = useQuery({
-    queryKey: ['/api/documents'],
+    queryKey: [documentsEndpoint, project],
     refetchInterval: 300000, // 5 minutes - less aggressive
     staleTime: 180000, // Consider data fresh for 3 minutes
     gcTime: 600000, // Keep in cache for 10 minutes
@@ -19,7 +27,7 @@ export default function AnalyticsDashboard() {
   });
 
   const { data: shopDrawingsData = [], isLoading: shopDrawingsLoading, refetch: refetchShopDrawings } = useQuery({
-    queryKey: ['/api/shop-drawings'],
+    queryKey: [shopDrawingsEndpoint, project],
     refetchInterval: 300000, // 5 minutes - less aggressive
     staleTime: 180000, // Consider data fresh for 3 minutes
     gcTime: 600000, // Keep in cache for 10 minutes
@@ -37,15 +45,16 @@ export default function AnalyticsDashboard() {
 
   const handleRefresh = async () => {
     try {
-      // Refresh Excel data on the server
-      const response = await fetch('/api/refresh-excel', { method: 'POST' });
+      // Refresh Excel data on the server based on project
+      const refreshEndpoint = project === 'emct' ? '/api/emct/refresh' : '/api/refresh-excel';
+      const response = await fetch(refreshEndpoint, { method: 'POST' });
       if (response.ok) {
         // Then refetch the frontend data
         refetchDocuments();
         refetchShopDrawings();
-        console.log('✅ Excel data refreshed successfully');
+        console.log('✅ Excel data refreshed successfully for', project);
       } else {
-        console.error('❌ Failed to refresh Excel data');
+        console.error('❌ Failed to refresh Excel data for', project);
       }
     } catch (error) {
       console.error('❌ Error refreshing Excel data:', error);
@@ -68,16 +77,18 @@ export default function AnalyticsDashboard() {
   // Combined analytics data with correct status logic
   const totalItems = documents.length + shopDrawings.length;
   
-  // Status counts based on the converted status codes from Excel service (includes both documents and shop drawings)
-  const code1Count = documents.filter((d: any) => d.currentStatus === 'CODE1').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'CODE1').length;
-  const code2Count = documents.filter((d: any) => d.currentStatus === 'CODE2').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'CODE2').length;
-  const code3Count = documents.filter((d: any) => d.currentStatus === 'CODE3').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'CODE3').length;
-  const urAtjvCount = documents.filter((d: any) => d.currentStatus === 'UR (ATJV)').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'UR (ATJV)').length;
-  const arAtjvCount = documents.filter((d: any) => d.currentStatus === 'AR (ATJV)').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'AR (ATJV)').length;
-  const urDarCount = documents.filter((d: any) => d.currentStatus === 'UR (DAR)').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'UR (DAR)').length;
-  const rtnAtlsCount = documents.filter((d: any) => d.currentStatus === 'RTN (ATLS)').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'RTN (ATLS)').length;
-  const rtnAsCount = documents.filter((d: any) => d.currentStatus === 'RTN (AS)').length + shopDrawings.filter((sd: any) => sd.currentStatus === 'RTN (AS)').length;
-  const pendingCount = documents.filter((d: any) => d.currentStatus === 'Pending').length;
+  // Status counts based on project type - EMCT uses different status codes
+  const getStatusField = (item: any) => project === 'emct' ? item.status : item.currentStatus;
+  
+  const code1Count = documents.filter((d: any) => getStatusField(d) === 'CODE1').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE1').length;
+  const code2Count = documents.filter((d: any) => getStatusField(d) === 'CODE2').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE2').length;
+  const code3Count = documents.filter((d: any) => getStatusField(d) === 'CODE3').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE3').length;
+  const urAtjvCount = documents.filter((d: any) => getStatusField(d) === 'UR (ATJV)' || getStatusField(d) === 'UR').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'UR (ATJV)' || getStatusField(sd) === 'UR').length;
+  const arAtjvCount = documents.filter((d: any) => getStatusField(d) === 'AR (ATJV)' || getStatusField(d) === 'AR').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'AR (ATJV)' || getStatusField(sd) === 'AR').length;
+  const urDarCount = documents.filter((d: any) => getStatusField(d) === 'UR (DAR)').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'UR (DAR)').length;
+  const rtnAtlsCount = documents.filter((d: any) => getStatusField(d) === 'RTN (ATLS)' || getStatusField(d) === 'RTN').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'RTN (ATLS)' || getStatusField(sd) === 'RTN').length;
+  const rtnAsCount = documents.filter((d: any) => getStatusField(d) === 'RTN (AS)').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'RTN (AS)').length;
+  const pendingCount = documents.filter((d: any) => getStatusField(d) === 'Pending' || getStatusField(d) === 'PENDING').length;
   
   // Shop drawings status counts (using same logic as documents)
   const submittedShopDrawings = shopDrawings.filter((sd: any) => {

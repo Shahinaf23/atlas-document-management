@@ -6,9 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RefreshCw, TrendingUp, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function DocumentsDashboard() {
+interface DocumentsDashboardProps {
+  project: string;
+}
+
+export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDashboardProps) {
+  const documentsEndpoint = project === 'emct' ? '/api/emct/documents' : '/api/documents';
+  
   const { data: documents = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/documents'],
+    queryKey: [documentsEndpoint, project],
     refetchInterval: 600000, // 10 minutes - reduced frequency for initial load performance
     staleTime: 300000, // Consider data fresh for 5 minutes
     gcTime: 1200000, // Keep in cache for 20 minutes
@@ -26,14 +32,15 @@ export default function DocumentsDashboard() {
 
   const handleRefresh = async () => {
     try {
-      // Refresh Excel data on the server
-      const response = await fetch('/api/refresh-excel', { method: 'POST' });
+      // Refresh Excel data on the server based on project
+      const refreshEndpoint = project === 'emct' ? '/api/emct/refresh' : '/api/refresh-excel';
+      const response = await fetch(refreshEndpoint, { method: 'POST' });
       if (response.ok) {
         // Then refetch the frontend data
         refetch();
-        console.log('✅ Excel data refreshed successfully');
+        console.log('✅ Excel data refreshed successfully for', project);
       } else {
-        console.error('❌ Failed to refresh Excel data');
+        console.error('❌ Failed to refresh Excel data for', project);
       }
     } catch (error) {
       console.error('❌ Error refreshing Excel data:', error);

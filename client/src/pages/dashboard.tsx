@@ -23,37 +23,63 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-type TabType = "overview" | "documents" | "shop-drawings" | "admin";
+type TabType = "jeddah-overview" | "jeddah-documents" | "jeddah-shop-drawings" | "jeddah-admin" |
+                "emct-overview" | "emct-documents" | "emct-shop-drawings" | "emct-admin";
 
 interface TabConfig {
   title: string;
   subtitle: string;
+  project: string;
 }
 
 const tabConfigs: Record<TabType, TabConfig> = {
-  overview: {
+  "jeddah-overview": {
     title: "Analytics & Overview",
-    subtitle: "Real-time document management analytics and insights",
+    subtitle: "Real-time document management analytics for South Terminal - Jeddah Project",
+    project: "jeddah",
   },
-  documents: {
+  "jeddah-documents": {
     title: "Document Logs",
-    subtitle: "View and manage document submissions",
+    subtitle: "View and manage document submissions for South Terminal - Jeddah Project",
+    project: "jeddah",
   },
-  "shop-drawings": {
+  "jeddah-shop-drawings": {
     title: "Shop Drawings",
-    subtitle: "Track shop drawing submissions and approvals",
+    subtitle: "Track shop drawing submissions for South Terminal - Jeddah Project",
+    project: "jeddah",
   },
-  admin: {
+  "jeddah-admin": {
     title: "Admin Upload",
-    subtitle: "Upload updated Excel files to refresh dashboard data",
+    subtitle: "Upload updated Excel files for South Terminal - Jeddah Project",
+    project: "jeddah",
+  },
+  "emct-overview": {
+    title: "Analytics & Overview",
+    subtitle: "Real-time document management analytics for EMCT Cargo-ZIA",
+    project: "emct",
+  },
+  "emct-documents": {
+    title: "Document Logs",
+    subtitle: "View and manage document submissions for EMCT Cargo-ZIA",
+    project: "emct",
+  },
+  "emct-shop-drawings": {
+    title: "Shop Drawings",
+    subtitle: "Track shop drawing submissions for EMCT Cargo-ZIA",
+    project: "emct",
+  },
+  "emct-admin": {
+    title: "Admin Upload",
+    subtitle: "Upload updated Excel files for EMCT Cargo-ZIA",
+    project: "emct",
   },
 };
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    // Restore active tab from localStorage, default to "overview"
+    // Restore active tab from localStorage, default to "jeddah-overview"
     const savedTab = localStorage.getItem('atlas_active_tab');
-    return (savedTab as TabType) || "overview";
+    return (savedTab as TabType) || "jeddah-overview";
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -69,13 +95,19 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // Refresh Excel data on the server without reloading the page
-      const response = await fetch('/api/refresh-excel', { method: 'POST' });
+      const currentProject = currentConfig.project;
+      let endpoint = '/api/refresh-excel';
+      
+      if (currentProject === 'emct') {
+        endpoint = '/api/emct/refresh';
+      }
+      
+      const response = await fetch(endpoint, { method: 'POST' });
       if (response.ok) {
-        console.log('✅ Excel data refreshed successfully');
+        console.log('✅ Excel data refreshed successfully for', currentProject);
         // The individual components will auto-refresh due to their query intervals
       } else {
-        console.error('❌ Failed to refresh Excel data');
+        console.error('❌ Failed to refresh Excel data for', currentProject);
       }
     } catch (error) {
       console.error('❌ Error refreshing Excel data:', error);
@@ -84,19 +116,23 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   };
 
   const renderActiveTab = useMemo(() => {
-    switch (activeTab) {
-      case "overview":
-        return <AnalyticsDashboard />;
-      case "documents":
-        return <DocumentsDashboard />;
-      case "shop-drawings":
-        return <ShopDrawingsDashboard />;
-      case "admin":
-        return (user.role === "admin" || user.role === "project manager") ? <AdminUpload /> : <AnalyticsDashboard />;
-      default:
-        return <AnalyticsDashboard />;
+    const project = currentConfig.project;
+    
+    if (activeTab.endsWith('-overview')) {
+      return <AnalyticsDashboard project={project} />;
+    } else if (activeTab.endsWith('-documents')) {
+      return <DocumentsDashboard project={project} />;
+    } else if (activeTab.endsWith('-shop-drawings')) {
+      return <ShopDrawingsDashboard project={project} />;
+    } else if (activeTab.endsWith('-admin')) {
+      return (user.role === "admin" || user.role === "project manager") ? 
+        <AdminUpload project={project} /> : 
+        <AnalyticsDashboard project={project} />;
     }
-  }, [activeTab, user.role]);
+    
+    // Default fallback
+    return <AnalyticsDashboard project="jeddah" />;
+  }, [activeTab, user.role, currentConfig.project]);
 
   return (
     <div className="min-h-screen app-background">
