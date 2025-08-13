@@ -60,102 +60,74 @@ export class EmctExcelService {
       const worksheet = workbook.Sheets[sheetName];
       
       const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      console.log(`🔍 EMCT Document file has ${rawData.length} total rows`);
       
-      // Debug: Show first few rows to understand structure
-      console.log('🔍 EMCT Document file structure - first 15 rows:');
-      rawData.slice(0, 15).forEach((row, i) => {
-        console.log(`Row ${i}:`, row);
-      });
-      
-      // Find header row dynamically
-      let headerRowIndex = -1;
-      let headers: any[] = [];
-      
-      for (let i = 0; i < Math.min(20, rawData.length); i++) {
-        const row = rawData[i];
-        if (row && Array.isArray(row) && row.length > 5) {
-          const firstCell = String(row[0] || '').toLowerCase().trim();
-          if (firstCell === 'sn' || firstCell === 'no.' || firstCell === 'no' || 
-              firstCell === 'serial' || firstCell === 'item' || 
-              (firstCell.includes('sn') && firstCell.length < 10)) {
-            headerRowIndex = i;
-            headers = row;
-            break;
-          }
-        }
-      }
-      
-      if (headerRowIndex === -1 || !headers || headers.length === 0) {
-        console.warn('⚠️ Could not find headers in EMCT document submittal log');
-        this.documentsCache = [];
-        return;
-      }
-      
-      console.log(`📋 Found EMCT document header at row ${headerRowIndex}:`, headers.slice(0, 10));
-      
-      // Find key column indices
-      const snIndex = 0; // Usually first column
-      let documentNameIndex = -1;
-      let statusIndex = -1;
-      let categoryIndex = -1;
-      let systemIndex = -1;
-      let vendorIndex = -1;
-      
-      headers.forEach((header, index) => {
-        const h = String(header || '').toLowerCase().trim();
-        if (h.includes('document') && h.includes('name')) {
-          documentNameIndex = index;
-        } else if (h.includes('status') || h.includes('approval') || h.includes('code')) {
-          statusIndex = index;
-        } else if (h.includes('category') || h.includes('type')) {
-          categoryIndex = index;
-        } else if (h.includes('system')) {
-          systemIndex = index;
-        } else if (h.includes('vendor') || h.includes('supplier')) {
-          vendorIndex = index;
-        }
-      });
-      
-      console.log('🗂️ EMCT Column mapping - Document Name:', documentNameIndex, 'Status:', statusIndex, 'Category:', categoryIndex);
-      
-      // Process data rows
-      const dataRows = rawData.slice(headerRowIndex + 1);
       const processedDocuments: any[] = [];
       let processedCount = 0;
       
-      for (let i = 0; i < dataRows.length; i++) {
-        const row = dataRows[i];
+      // Based on analysis: Data starts at row 9, structure is:
+      // Row analysis shows: Col 2: Type, Col 4: Discipline, Col 8: Document Name, Col 10: Reference, etc.
+      for (let i = 9; i < rawData.length; i++) {
+        const row = rawData[i];
         if (!row || !Array.isArray(row) || row.length === 0) continue;
         
-        const sn = row[snIndex];
-        if (!sn || (typeof sn !== 'number' && isNaN(Number(sn)))) continue;
+        console.log(`🔍 Processing EMCT doc row ${i}:`, row.slice(0, 12).map((cell, idx) => `${idx}:${cell}`));
         
-        const documentName = documentNameIndex >= 0 ? String(row[documentNameIndex] || '').trim() : '';
-        if (!documentName) continue;
+        const docType = String(row[2] || '').trim();
+        const discipline = String(row[4] || '').trim();
+        const docName = String(row[8] || '').trim();
+        const reference = String(row[10] || '').trim();
+        const category = String(row[6] || 'Project Submittal').trim();
         
-        const status = statusIndex >= 0 ? String(row[statusIndex] || '').trim() : '';
-        const category = categoryIndex >= 0 ? String(row[categoryIndex] || '').trim() : '';
-        const system = systemIndex >= 0 ? String(row[systemIndex] || '').trim() : '';
-        const vendor = vendorIndex >= 0 ? String(row[vendorIndex] || '').trim() : '';
+        // Skip if no meaningful data
+        if (!docName || docName.length < 5) continue;
+        if (docType.toLowerCase().includes('document') || docName.toLowerCase().includes('revision')) continue;
+        
+        // Determine status - look for status indicators in later columns
+        let status = 'PENDING';
+        for (let col = 12; col < Math.min(row.length, 25); col++) {
+          const cellValue = String(row[col] || '').trim().toLowerCase();
+          if (cellValue.includes('approved') || cellValue.includes('code1')) {
+            status = 'CODE1';
+            break;
+          } else if (cellValue.includes('under review') || cellValue.includes('ur')) {
+            status = 'UR';
+            break;
+          } else if (cellValue.includes('returned') || cellValue.includes('rtn')) {
+            status = 'RTN';
+            break;
+          }
+        }
         
         processedDocuments.push({
           id: processedCount + 1,
-          documentId: `EMCT-DOC-${Date.now()}-${processedCount + 1}`,
-          serialNumber: Number(sn),
-          documentName,
-          status: status || 'PENDING',
-          category: category || 'General',
-          system: system || 'N/A',
-          vendor: vendor || 'N/A',
+          documentId: `EMCT-DOC-${processedCount + 1}`,
+          serialNumber: processedCount + 1,
+          documentName: docName,
+          status: status,
+          category: category,
+          discipline: discipline,
+          documentType: docType,
+          reference: reference,
           project: 'EMCT Cargo-ZIA',
           submissionDate: new Date().toISOString().split('T')[0],
           lastUpdated: new Date().toISOString(),
         });
         
         processedCount++;
+        
+        // Debug: Log first few processed items
+        if (processedCount <= 3) {
+          console.log(`📝 Sample EMCT document ${processedCount}:`, {
+            type: docType,
+            discipline: discipline,
+            name: docName.substring(0, 50),
+            status: status
+          });
+        }
       }
       
-      console.log(`✅ Loaded ${processedDocuments.length} EMCT document submittals (processed ${processedCount} data rows)`);
+      console.log(`✅ Loaded ${processedDocuments.length} EMCT document submittals`);
       this.documentsCache = processedDocuments;
       
     } catch (error) {
@@ -175,130 +147,81 @@ export class EmctExcelService {
       const worksheet = workbook.Sheets[sheetName];
       
       const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      console.log(`🔍 EMCT Shop drawing file has ${rawData.length} total rows`);
       
-      console.log(`🔍 Total rows in EMCT shop drawing file: ${rawData.length}`);
-      
-      // Debug: Show first few rows
-      console.log('🔍 EMCT Shop drawing file structure - first 15 rows:');
-      rawData.slice(0, 15).forEach((row, i) => {
-        console.log(`Row ${i}:`, row);
-      });
-      
-      // Find header row dynamically
-      let headerRowIndex = -1;
-      let headers: any[] = [];
-      
-      for (let i = 0; i < Math.min(20, rawData.length); i++) {
-        const row = rawData[i];
-        if (row && Array.isArray(row) && row.length > 3) {
-          const firstCell = String(row[0] || '').toLowerCase().trim();
-          if (firstCell === 'sn' || firstCell === 'no.' || firstCell === 'no' || 
-              firstCell === 'serial' || firstCell === 'item' ||
-              (firstCell.includes('sn') && firstCell.length < 10)) {
-            headerRowIndex = i;
-            headers = row;
-            break;
-          }
-        }
-      }
-      
-      if (headerRowIndex === -1) {
-        console.warn('⚠️ Could not find headers in EMCT shop drawing log');
-        this.shopDrawingsCache = [];
-        return;
-      }
-      
-      console.log(`📋 Found EMCT shop drawing header at row ${headerRowIndex}:`, headers.slice(0, 10));
-      
-      // Find key column indices
-      const snIndex = 0;
-      let systemIndex = -1;
-      let statusIndex = -1;
-      let drawingNameIndex = -1;
-      let disciplineIndex = -1;
-      
-      headers.forEach((header, index) => {
-        const h = String(header || '').toLowerCase().trim();
-        if (h.includes('system') && !h.includes('sub')) {
-          systemIndex = index;
-        } else if (h.includes('status') || h.includes('approval') || h.includes('code')) {
-          statusIndex = index;
-        } else if (h.includes('drawing') && h.includes('name')) {
-          drawingNameIndex = index;
-        } else if (h.includes('discipline') || h.includes('disc')) {
-          disciplineIndex = index;
-        }
-      });
-      
-      // If we couldn't find status column, scan all columns for status-like data
-      if (statusIndex === -1) {
-        for (let colIndex = 0; colIndex < headers.length; colIndex++) {
-          const sampleData = rawData.slice(headerRowIndex + 1, headerRowIndex + 20)
-            .map(row => String(row[colIndex] || '').trim())
-            .filter(val => val.length > 0);
-          
-          const hasStatusValues = sampleData.some(val => 
-            /^(CODE|UR|AR|RTN|APPROVED|PENDING|SUBMITTED)/i.test(val)
-          );
-          
-          if (hasStatusValues) {
-            statusIndex = colIndex;
-            console.log(`🔍 Found EMCT status column at index ${colIndex} based on data pattern`);
-            break;
-          }
-        }
-      }
-      
-      console.log('🗂️ EMCT Column mapping - System index:', systemIndex, 'Status index:', statusIndex);
-      
-      // Process data rows
-      const dataRows = rawData.slice(headerRowIndex + 1);
-      const processedDrawings: any[] = [];
-      let expectedDataRows = 0;
+      const processedShopDrawings: any[] = [];
       let processedCount = 0;
       
-      // Count expected rows with numeric SN
-      for (const row of dataRows) {
-        if (row && Array.isArray(row) && row.length > 0) {
-          const sn = row[snIndex];
-          if (sn && (typeof sn === 'number' || !isNaN(Number(sn)))) {
-            expectedDataRows++;
-          }
-        }
-      }
-      
-      console.log(`🔍 Expected EMCT data rows with numeric SN: ${expectedDataRows}`);
-      
-      for (let i = 0; i < dataRows.length; i++) {
-        const row = dataRows[i];
+      // Based on analysis: Data starts at row 9, exact structure:
+      // Col 2: Building, Col 12: System, Col 16: Drawing Description, etc.
+      for (let i = 9; i < rawData.length; i++) {
+        const row = rawData[i];
         if (!row || !Array.isArray(row) || row.length === 0) continue;
         
-        const sn = row[snIndex];
-        if (!sn || (typeof sn !== 'number' && isNaN(Number(sn)))) continue;
+        const building = String(row[2] || '').trim();
+        const program = String(row[3] || '').trim();
+        const contract = String(row[4] || '').trim();
+        const discipline = String(row[5] || '').trim();
+        const system = String(row[12] || '').trim();
+        const subSystem = String(row[13] || '').trim();
+        const drawingName = String(row[16] || '').trim();
         
-        const system = systemIndex >= 0 ? String(row[systemIndex] || '').trim() : '';
-        const status = statusIndex >= 0 ? String(row[statusIndex] || '').trim() : '';
-        const drawingName = drawingNameIndex >= 0 ? String(row[drawingNameIndex] || '').trim() : '';
-        const discipline = disciplineIndex >= 0 ? String(row[disciplineIndex] || '').trim() : '';
+        console.log(`🔍 Processing EMCT shop row ${i}: building=${building}, system=${system}, drawing=${drawingName.substring(0, 30)}`);
         
-        processedDrawings.push({
+        // Skip if no meaningful data
+        if (!building || !drawingName || building.length < 3) continue;
+        if (building.toLowerCase().includes('building') && building.length < 10) continue;
+        
+        // Look for status
+        for (let col = 20; col < Math.min(row.length, 40); col++) {
+          const cellValue = String(row[col] || '').trim().toLowerCase();
+          if (cellValue.includes('under review') || cellValue.includes('ur')) {
+            status = 'UR';
+            break;
+          } else if (cellValue.includes('approved')) {
+            status = 'CODE1';
+            break;
+          } else if (cellValue.includes('returned')) {
+            status = 'RTN';
+            break;
+          }
+        }
+        
+        if (!drawingName) {
+          drawingName = `${building} - ${discipline} Drawing`;
+        }
+        
+        processedShopDrawings.push({
           id: processedCount + 1,
-          drawingId: `EMCT-SD-${Date.now()}-${processedCount + 1}`,
-          serialNumber: Number(sn),
-          system: system || 'N/A',
-          status: status || 'PENDING',
-          drawingName: drawingName || `Drawing ${sn}`,
-          discipline: discipline || 'General',
+          drawingId: `EMCT-SD-${processedCount + 1}`,
+          serialNumber: processedCount + 1,
+          drawingName: drawingName,
+          status: status,
+          system: system || discipline || 'General',
+          building: building,
+          program: program,
+          contract: contract,
+          discipline: discipline,
           project: 'EMCT Cargo-ZIA',
           submissionDate: new Date().toISOString().split('T')[0],
           lastUpdated: new Date().toISOString(),
         });
         
         processedCount++;
+        
+        // Debug: Log first few processed items
+        if (processedCount <= 3) {
+          console.log(`🏗️ Sample EMCT shop drawing ${processedCount}:`, {
+            building: building,
+            system: system || discipline,
+            name: drawingName.substring(0, 50),
+            status: status
+          });
+        }
       }
       
-      console.log(`✅ Loaded ${processedDrawings.length} EMCT shop drawings from Excel (processed ${processedCount} data rows)`);
-      this.shopDrawingsCache = processedDrawings;
+      console.log(`✅ Loaded ${processedShopDrawings.length} EMCT shop drawings`);
+      this.shopDrawingsCache = processedShopDrawings;
       
     } catch (error) {
       console.error('❌ Error loading EMCT shop drawings:', error);

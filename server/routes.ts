@@ -689,6 +689,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // EMCT Admin upload route
+  app.post("/api/emct/admin/upload", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileType = req.body.fileType || 'document_submittal';
+      console.log(`📤 EMCT Admin upload: ${req.file.originalname} (${fileType})`);
+      
+      // Save file to attached_assets (replacing existing EMCT files)
+      const fs = require('fs');
+      const path = require('path');
+      const targetPath = path.join(process.cwd(), 'attached_assets', req.file.originalname);
+      
+      fs.writeFileSync(targetPath, req.file.buffer);
+      console.log(`💾 Saved EMCT file to: ${targetPath}`);
+      
+      // Force refresh EMCT Excel service
+      const refreshedData = await emctExcelService.refreshAfterUpload();
+
+      res.json({ 
+        message: `Successfully uploaded ${req.file.originalname}`,
+        recordCount: refreshedData.documents + refreshedData.shopDrawings,
+        validation: { errors: 0 },
+        stats: refreshedData
+      });
+      
+    } catch (error) {
+      console.error('❌ EMCT Admin upload error:', error);
+      res.status(500).json({ 
+        message: "Error uploading EMCT file", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Admin routes
   app.use('/api/admin', adminRoutes);
   

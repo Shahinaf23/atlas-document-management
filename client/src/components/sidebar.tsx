@@ -28,7 +28,7 @@ interface MenuItem {
 const projectFolders: ProjectFolder[] = [
   {
     id: "jeddah",
-    name: "South Terminal - Jeddah Project",
+    name: "South Terminal-Jeddah",
     items: [
       { id: "jeddah-overview", label: "Analytics & Overview", icon: BarChart3, project: "jeddah" },
       { id: "jeddah-documents", label: "Document Logs", icon: FileText, project: "jeddah" },
