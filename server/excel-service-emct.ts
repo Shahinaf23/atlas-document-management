@@ -7,14 +7,25 @@ export class EmctExcelService {
   private shopDrawingsCache: any[] = [];
   private lastRefresh: Date = new Date(0);
   private readonly refreshInterval = 30000; // 30 seconds
+  private isInitialized = false;
 
   async getDocuments(): Promise<any[]> {
-    await this.maybeRefresh();
+    if (!this.isInitialized) {
+      await this.forceRefresh();
+      this.isInitialized = true;
+    } else {
+      await this.maybeRefresh();
+    }
     return this.documentsCache;
   }
 
   async getShopDrawings(): Promise<any[]> {
-    await this.maybeRefresh();
+    if (!this.isInitialized) {
+      await this.forceRefresh();
+      this.isInitialized = true;
+    } else {
+      await this.maybeRefresh();
+    }
     return this.shopDrawingsCache;
   }
 

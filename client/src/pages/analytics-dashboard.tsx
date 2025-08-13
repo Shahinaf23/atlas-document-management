@@ -17,22 +17,24 @@ export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDash
   const documentsEndpoint = project === 'emct' ? '/api/emct/documents' : '/api/documents';
   const shopDrawingsEndpoint = project === 'emct' ? '/api/emct/shop-drawings' : '/api/shop-drawings';
   
-  const { data: documentsData = [], isLoading: documentsLoading, refetch: refetchDocuments } = useQuery({
+  const { data: documentsData = [], isLoading: documentsLoading, refetch: refetchDocuments, error: documentsError } = useQuery({
     queryKey: [documentsEndpoint, project],
-    refetchInterval: 300000, // 5 minutes - less aggressive
-    staleTime: 180000, // Consider data fresh for 3 minutes
-    gcTime: 600000, // Keep in cache for 10 minutes
-    refetchOnMount: "always", // Always try to refetch on mount
-    refetchOnReconnect: "always", // Refetch on reconnect
+    refetchInterval: 30000, // 30 seconds - more frequent
+    staleTime: 10000, // Consider data fresh for 10 seconds only
+    gcTime: 300000, // Keep in cache for 5 minutes
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnReconnect: true, // Refetch on reconnect
+    retry: 3,
   });
 
-  const { data: shopDrawingsData = [], isLoading: shopDrawingsLoading, refetch: refetchShopDrawings } = useQuery({
+  const { data: shopDrawingsData = [], isLoading: shopDrawingsLoading, refetch: refetchShopDrawings, error: shopDrawingsError } = useQuery({
     queryKey: [shopDrawingsEndpoint, project],
-    refetchInterval: 300000, // 5 minutes - less aggressive
-    staleTime: 180000, // Consider data fresh for 3 minutes
-    gcTime: 600000, // Keep in cache for 10 minutes
-    refetchOnMount: "always", // Always try to refetch on mount
-    refetchOnReconnect: "always", // Refetch on reconnect
+    refetchInterval: 30000, // 30 seconds - more frequent
+    staleTime: 10000, // Consider data fresh for 10 seconds only
+    gcTime: 300000, // Keep in cache for 5 minutes
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnReconnect: true, // Refetch on reconnect
+    retry: 3,
   });
 
   const { data: activitiesData = [] } = useQuery({
@@ -66,13 +68,47 @@ export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDash
   const shopDrawings = Array.isArray(shopDrawingsData) ? shopDrawingsData : [];
   const activities = Array.isArray(activitiesData) ? activitiesData : [];
   
+  // Enhanced debugging and error logging
   console.log('ANALYTICS DASHBOARD DEBUG:', {
+    project,
+    documentsEndpoint,
+    shopDrawingsEndpoint,
     documentsLength: documents.length,
     shopDrawingsLength: shopDrawings.length,
-    documentsStatuses: Array.from(new Set(documents.map((d: any) => d.currentStatus))),
-    shopDrawingsStatuses: Array.from(new Set(shopDrawings.map((sd: any) => sd.currentStatus))),
-    shopDrawingsUrCount: shopDrawings.filter((sd: any) => sd.currentStatus === 'UR (ATJV)' || sd.currentStatus === 'UR (DAR)').length
+    documentsLoading,
+    shopDrawingsLoading,
+    documentsError: documentsError ? documentsError.message : null,
+    shopDrawingsError: shopDrawingsError ? shopDrawingsError.message : null,
+    documentsStatuses: Array.from(new Set(documents.map((d: any) => d.currentStatus || d.status))),
+    shopDrawingsStatuses: Array.from(new Set(shopDrawings.map((sd: any) => sd.currentStatus || sd.status))),
   });
+
+  // Show loading state if data is still loading
+  if ((documentsLoading || shopDrawingsLoading) && documents.length === 0 && shopDrawings.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="animate-spin h-8 w-8 mx-auto mb-4 text-indigo-600" />
+          <p className="text-lg text-gray-600">Loading {project === 'emct' ? 'EMCT' : 'Jeddah'} project data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if there are errors and no data
+  if ((documentsError || shopDrawingsError) && documents.length === 0 && shopDrawings.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">Error loading data</div>
+          <Button onClick={() => { refetchDocuments(); refetchShopDrawings(); }}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Combined analytics data with correct status logic
   const totalItems = documents.length + shopDrawings.length;

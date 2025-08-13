@@ -25,6 +25,14 @@ const upload = multer({
   }
 });
 
+// Separate upload handler for EMCT with any field name support
+const emctUpload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Health check endpoint for Render (moved to /health)
@@ -689,29 +697,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // EMCT Admin upload route
-  app.post("/api/emct/admin/upload", upload.single('file'), async (req, res) => {
+  // EMCT Admin upload route with no field restrictions
+  app.post("/api/emct/admin/upload", multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }).any(), async (req, res) => {
     try {
-      if (!req.file) {
+      const uploadedFiles = req.files as Express.Multer.File[];
+      if (!uploadedFiles || uploadedFiles.length === 0) {
         return res.status(400).json({ message: "No file uploaded" });
+      }
+      const req_file = uploadedFiles[0];
+
+      // Validate file type
+      if (!req_file.originalname.toLowerCase().endsWith('.xlsx') && 
+          !req_file.originalname.toLowerCase().endsWith('.xls')) {
+        return res.status(400).json({ 
+          message: "Please check your file format and try again. Only Excel files (.xlsx, .xls) are supported." 
+        });
       }
 
       const fileType = req.body.fileType || 'document_submittal';
-      console.log(`📤 EMCT Admin upload: ${req.file.originalname} (${fileType})`);
+      console.log(`📤 EMCT Admin upload: ${req_file.originalname} (${fileType})`);
+      console.log(`📋 File details: Size=${req_file.size}, MimeType=${req_file.mimetype}`);
       
       // Save file to attached_assets (replacing existing EMCT files)
       const fs = require('fs');
       const path = require('path');
-      const targetPath = path.join(process.cwd(), 'attached_assets', req.file.originalname);
+      const targetPath = path.join(process.cwd(), 'attached_assets', req_file.originalname);
       
-      fs.writeFileSync(targetPath, req.file.buffer);
+      fs.writeFileSync(targetPath, req_file.buffer);
       console.log(`💾 Saved EMCT file to: ${targetPath}`);
       
       // Force refresh EMCT Excel service
       const refreshedData = await emctExcelService.refreshAfterUpload();
 
+      // Log activity
+      await storage.createActivity({
+        type: fileType === 'document_submittal' ? "document" : "shop_drawing",
+        entityId: "emct_excel_upload",
+        action: "uploaded",
+        description: `Uploaded new EMCT ${fileType} Excel file: ${req.file.originalname}`,
+        userId: "admin",
+      });
+
       res.json({ 
-        message: `Successfully uploaded ${req.file.originalname}`,
+        message: `Successfully uploaded ${req_file.originalname}`,
         recordCount: refreshedData.documents + refreshedData.shopDrawings,
         validation: { errors: 0 },
         stats: refreshedData
