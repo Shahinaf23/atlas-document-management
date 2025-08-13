@@ -7,7 +7,7 @@ import { RefreshCw, TrendingUp, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DocumentsDashboardProps {
-  project: string;
+  project?: string;
 }
 
 export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDashboardProps) {
@@ -26,7 +26,7 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
     retryDelay: 1000,
   });
   
-  console.log('DocumentsDashboard - data:', documents?.length, 'loading:', isLoading, 'error:', error);
+  console.log('DocumentsDashboard - data:', Array.isArray(documents) ? documents.length : 'not array', 'loading:', isLoading, 'error:', error);
 
   const { data: activitiesData = [] } = useQuery({
     queryKey: ['/api/activities'],

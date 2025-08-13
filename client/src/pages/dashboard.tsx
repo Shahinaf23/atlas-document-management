@@ -77,9 +77,14 @@ const tabConfigs: Record<TabType, TabConfig> = {
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    // Restore active tab from localStorage, default to "jeddah-overview"
-    const savedTab = localStorage.getItem('atlas_active_tab');
-    return (savedTab as TabType) || "jeddah-overview";
+    try {
+      // Restore active tab from localStorage, default to "jeddah-overview"
+      const savedTab = localStorage.getItem('atlas_active_tab');
+      return (savedTab as TabType) || "jeddah-overview";
+    } catch (error) {
+      console.error('Error reading localStorage:', error);
+      return "jeddah-overview";
+    }
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -87,7 +92,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('atlas_active_tab', activeTab);
+    try {
+      localStorage.setItem('atlas_active_tab', activeTab);
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
   }, [activeTab]);
 
   const currentConfig = tabConfigs[activeTab];
@@ -116,23 +125,28 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   };
 
   const renderActiveTab = useMemo(() => {
-    const project = currentConfig.project;
-    
-    if (activeTab.endsWith('-overview')) {
-      return <AnalyticsDashboard project={project} />;
-    } else if (activeTab.endsWith('-documents')) {
-      return <DocumentsDashboard project={project} />;
-    } else if (activeTab.endsWith('-shop-drawings')) {
-      return <ShopDrawingsDashboard project={project} />;
-    } else if (activeTab.endsWith('-admin')) {
-      return (user.role === "admin" || user.role === "project manager") ? 
-        <AdminUpload project={project} /> : 
-        <AnalyticsDashboard project={project} />;
+    try {
+      const project = currentConfig?.project || "jeddah";
+      
+      if (activeTab.endsWith('-overview')) {
+        return <AnalyticsDashboard project={project} />;
+      } else if (activeTab.endsWith('-documents')) {
+        return <DocumentsDashboard project={project} />;
+      } else if (activeTab.endsWith('-shop-drawings')) {
+        return <ShopDrawingsDashboard project={project} />;
+      } else if (activeTab.endsWith('-admin')) {
+        return (user?.role === "admin" || user?.role === "project manager") ? 
+          <AdminUpload project={project} /> : 
+          <AnalyticsDashboard project={project} />;
+      }
+      
+      // Default fallback
+      return <AnalyticsDashboard project="jeddah" />;
+    } catch (error) {
+      console.error('Error rendering tab:', error);
+      return <AnalyticsDashboard project="jeddah" />;
     }
-    
-    // Default fallback
-    return <AnalyticsDashboard project="jeddah" />;
-  }, [activeTab, user.role, currentConfig.project]);
+  }, [activeTab, user?.role, currentConfig?.project]);
 
   return (
     <div className="min-h-screen app-background">

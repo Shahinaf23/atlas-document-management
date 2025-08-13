@@ -9,7 +9,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { isSubmittedStatusCode, isPendingStatus } from "@shared/schema";
 
 interface AnalyticsDashboardProps {
-  project: string;
+  project?: string;
 }
 
 export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDashboardProps) {

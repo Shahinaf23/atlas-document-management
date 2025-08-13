@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface AdminUploadProps {
-  project: string;
+  project?: string;
 }
 
 export default function AdminUpload({ project = "jeddah" }: AdminUploadProps) {

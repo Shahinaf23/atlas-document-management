@@ -7,7 +7,7 @@ import { RefreshCw, TrendingUp, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ShopDrawingsDashboardProps {
-  project: string;
+  project?: string;
 }
 
 export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawingsDashboardProps) {
@@ -26,7 +26,7 @@ export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawin
     retryDelay: 1000,
   });
   
-  console.log('ShopDrawingsDashboard - data:', shopDrawings?.length, 'loading:', isLoading, 'error:', error);
+  console.log('ShopDrawingsDashboard - data:', Array.isArray(shopDrawings) ? shopDrawings.length : 'not array', 'loading:', isLoading, 'error:', error);
 
   const { data: activitiesData = [] } = useQuery({
     queryKey: ['/api/activities'],
