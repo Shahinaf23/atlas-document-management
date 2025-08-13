@@ -99,12 +99,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }
   }, [activeTab]);
 
-  const currentConfig = tabConfigs[activeTab];
+  const currentConfig = tabConfigs[activeTab] || tabConfigs["jeddah-overview"];
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const currentProject = currentConfig.project;
+      const currentProject = currentConfig?.project || 'jeddah';
       let endpoint = '/api/refresh-excel';
       
       if (currentProject === 'emct') {
@@ -146,7 +146,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       console.error('Error rendering tab:', error);
       return <AnalyticsDashboard project="jeddah" />;
     }
-  }, [activeTab, user?.role, currentConfig?.project]);
+  }, [activeTab, user?.role, currentConfig]);
 
   return (
     <div className="min-h-screen app-background">
@@ -216,8 +216,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 </Button>
                 
                 <div>
-                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{currentConfig.title}</h1>
-                  <p className="text-sm lg:text-base text-gray-600">{currentConfig.subtitle}</p>
+                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{currentConfig?.title || 'Atlas Dashboard'}</h1>
+                  <p className="text-sm lg:text-base text-gray-600">{currentConfig?.subtitle || 'Document Management System'}</p>
                 </div>
               </div>
               

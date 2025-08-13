@@ -13,8 +13,6 @@ interface ShopDrawingsDashboardProps {
 export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawingsDashboardProps) {
   const shopDrawingsEndpoint = project === 'emct' ? '/api/emct/shop-drawings' : '/api/shop-drawings';
   
-  console.log('ShopDrawingsDashboard - project:', project, 'endpoint:', shopDrawingsEndpoint);
-  
   const { data: shopDrawings = [], isLoading, error, refetch } = useQuery({
     queryKey: [shopDrawingsEndpoint],
     enabled: true,
@@ -25,8 +23,6 @@ export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawin
     retry: 3,
     retryDelay: 1000,
   });
-  
-  console.log('ShopDrawingsDashboard - data:', Array.isArray(shopDrawings) ? shopDrawings.length : 'not array', 'loading:', isLoading, 'error:', error);
 
   const { data: activitiesData = [] } = useQuery({
     queryKey: ['/api/activities'],

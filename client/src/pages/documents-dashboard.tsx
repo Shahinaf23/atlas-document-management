@@ -13,8 +13,6 @@ interface DocumentsDashboardProps {
 export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDashboardProps) {
   const documentsEndpoint = project === 'emct' ? '/api/emct/documents' : '/api/documents';
   
-  console.log('DocumentsDashboard - project:', project, 'endpoint:', documentsEndpoint);
-  
   const { data: documents = [], isLoading, error, refetch } = useQuery({
     queryKey: [documentsEndpoint],
     enabled: true,
@@ -25,8 +23,6 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
     retry: 3,
     retryDelay: 1000,
   });
-  
-  console.log('DocumentsDashboard - data:', Array.isArray(documents) ? documents.length : 'not array', 'loading:', isLoading, 'error:', error);
 
   const { data: activitiesData = [] } = useQuery({
     queryKey: ['/api/activities'],
