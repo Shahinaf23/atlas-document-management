@@ -5,21 +5,17 @@ import * as xlsx from 'xlsx';
 export class ExcelService {
   private documentsCache: any[] = [];
   private shopDrawingsCache: any[] = [];
-  private raqDocumentsCache: any[] = [];
-  private raqShopDrawingsCache: any[] = [];
   private lastRefresh: Date = new Date(0);
   private readonly refreshInterval = 30000; // 30 seconds
 
   async getDocuments(): Promise<any[]> {
     await this.maybeRefresh();
-    // Combine original documents with RAQ documents
-    return [...this.documentsCache, ...this.raqDocumentsCache];
+    return this.documentsCache;
   }
 
   async getShopDrawings(): Promise<any[]> {
     await this.maybeRefresh();
-    // Combine original shop drawings with RAQ shop drawings
-    return [...this.shopDrawingsCache, ...this.raqShopDrawingsCache];
+    return this.shopDrawingsCache;
   }
 
   // New method to load from uploaded Excel files in database
@@ -65,9 +61,6 @@ export class ExcelService {
         await this.loadShopDrawings();
       }
       
-      // Always load RAQ data from attached assets
-      await this.loadRAQData();
-      
       this.lastRefresh = new Date();
       console.log('✅ Excel data refreshed successfully');
     } catch (error) {
@@ -78,8 +71,8 @@ export class ExcelService {
   async refreshAfterUpload(): Promise<{ documents: number; shopDrawings: number }> {
     await this.forceRefresh();
     return {
-      documents: this.documentsCache.length + this.raqDocumentsCache.length,
-      shopDrawings: this.shopDrawingsCache.length + this.raqShopDrawingsCache.length,
+      documents: this.documentsCache.length,
+      shopDrawings: this.shopDrawingsCache.length,
     };
   }
 
@@ -576,158 +569,6 @@ export class ExcelService {
           priority: 'Medium'
         }
       ];
-    }
-  }
-
-  private async loadRAQData(): Promise<void> {
-    console.log('🔄 Loading RAQ data...');
-    try {
-      console.log('📄 Starting RAQ documents processing...');
-      this.raqDocumentsCache = await this.processRAQDocuments();
-      console.log('🏗️ Starting RAQ shop drawings processing...');
-      this.raqShopDrawingsCache = await this.processRAQShopDrawings();
-      console.log(`✅ Loaded ${this.raqDocumentsCache.length} RAQ documents and ${this.raqShopDrawingsCache.length} RAQ shop drawings`);
-    } catch (error) {
-      console.error('❌ Error loading RAQ data:', error);
-      this.raqDocumentsCache = [];
-      this.raqShopDrawingsCache = [];
-    }
-  }
-
-  private async processRAQDocuments(): Promise<any[]> {
-    try {
-      console.log('📄 Loading RAQ document submittals from Excel...');
-      const filePath = join(process.cwd(), 'attached_assets', 'Document Submittal Log-RAQ_1755061638473.xlsx');
-      const buffer = await readFile(filePath);
-      
-      const workbook = xlsx.read(buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      
-      const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-      
-      console.log('🔍 RAQ document file structure - first 12 rows:');
-      for (let i = 0; i < Math.min(12, rawData.length); i++) {
-        console.log(`Row ${i}:`, JSON.stringify(rawData[i]));
-      }
-      
-      // Header row is at index 7, data starts from row 9 (index 8)
-      const headerRow = rawData[7];
-      const dataStartRow = 8;
-      
-      console.log('📋 Found RAQ document header at row 7:', headerRow);
-      
-      const documents: any[] = [];
-      let processedCount = 0;
-      
-      for (let i = dataStartRow; i < rawData.length; i++) {
-        const row = rawData[i];
-        if (!row || row.length === 0) continue;
-        
-        // Skip empty rows or rows that don't have basic data
-        const documentType = row[3]; // DOCTYPE column
-        const documentName = row[6]; // DNAME column
-        
-        if (!documentType && !documentName) continue;
-        
-        try {
-          const document = {
-            id: processedCount + 1000, // Offset to avoid ID conflicts
-            documentId: `RAQ-DOC-${processedCount + 1}`,
-            title: documentName || 'Untitled Document',
-            vendor: 'N/A', // RAQ files have no vendors
-            documentType: documentType || 'Unknown',
-            category: row[4] || 'Project Submittal', // CATEGORIES column
-            discipline: row[2] || 'General', // DISCIPLINE column
-            system: 'N/A',
-            currentStatus: row[12] || 'UR', // STATUS0 column
-            submittedAt: row[9] ? new Date(row[9]) : null, // STD0 column
-            submittedDate: row[9] ? new Date(row[9]) : null,
-            lastUpdated: new Date(),
-            priority: 'Medium'
-          };
-          
-          documents.push(document);
-          processedCount++;
-        } catch (error) {
-          console.warn(`⚠️ Error processing RAQ document row ${i}:`, error);
-        }
-      }
-      
-      console.log(`✅ Loaded ${documents.length} RAQ document submittals`);
-      return documents;
-    } catch (error) {
-      console.error('❌ Error loading RAQ documents:', error);
-      return [];
-    }
-  }
-
-  private async processRAQShopDrawings(): Promise<any[]> {
-    try {
-      console.log('🏗️ Loading RAQ shop drawings from Excel...');
-      const filePath = join(process.cwd(), 'attached_assets', 'Shop Drawing Log - RAQ (Updated)_1755061644271.xlsx');
-      const buffer = await readFile(filePath);
-      
-      const workbook = xlsx.read(buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      
-      const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-      
-      console.log('🔍 RAQ shop drawing file structure - first 10 rows:');
-      for (let i = 0; i < Math.min(10, rawData.length); i++) {
-        console.log(`Row ${i}:`, JSON.stringify(rawData[i]));
-      }
-      
-      // Header row is at index 7, data starts from row 9 (index 8)
-      const headerRow = rawData[7];
-      const dataStartRow = 8;
-      
-      console.log('📋 Found RAQ shop drawing header at row 7:', headerRow);
-      
-      const shopDrawings: any[] = [];
-      let processedCount = 0;
-      
-      for (let i = dataStartRow; i < rawData.length; i++) {
-        const row = rawData[i];
-        if (!row || row.length === 0) continue;
-        
-        // Skip empty rows or rows that don't have basic data
-        const buildingName = row[1]; // BUILDINGS NAME column
-        const description = row[15]; // DESCRIPTION column
-        const system = row[11]; // SYSTEM column
-        
-        if (!buildingName && !description) continue;
-        
-        try {
-          const shopDrawing = {
-            id: processedCount + 2000, // Offset to avoid ID conflicts
-            drawingId: `RAQ-SD-${processedCount + 1}`,
-            title: description || 'Untitled Drawing',
-            drawingNumber: row[14] || `RAQ-${processedCount + 1}`, // ATLAS DRAWING NUMBER
-            buildingName: buildingName || 'Unknown Building',
-            system: system || 'Unknown System',
-            subSystem: row[12] || 'General', // SUB SYSTEM column
-            discipline: row[4] || 'General', // DISCIPLINE CODE column
-            currentStatus: row[23] || 'UR', // LATEST STATUS column
-            submittedAt: row[21] ? new Date(row[21]) : null, // SUBMISSION DTAE column
-            submittedDate: row[21] ? new Date(row[21]) : null,
-            lastUpdated: new Date(),
-            priority: 'Medium'
-          };
-          
-          shopDrawings.push(shopDrawing);
-          processedCount++;
-        } catch (error) {
-          console.warn(`⚠️ Error processing RAQ shop drawing row ${i}:`, error);
-        }
-      }
-      
-      console.log(`✅ Loaded ${shopDrawings.length} RAQ shop drawings`);
-      return shopDrawings;
-    } catch (error) {
-      console.error('❌ Error loading RAQ shop drawings:', error);
-      return [];
     }
   }
 }
