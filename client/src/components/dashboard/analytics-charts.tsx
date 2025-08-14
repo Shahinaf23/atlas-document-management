@@ -103,8 +103,48 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
     return null;
   };
 
+  // Timeline data (submission over time)
+  const timelineData = data
+    .filter(item => item.submittedDate)
+    .sort((a, b) => new Date(a.submittedDate).getTime() - new Date(b.submittedDate).getTime())
+    .reduce((acc: any[], item: any, index: number) => {
+      const date = new Date(item.submittedDate).toISOString().split('T')[0];
+      const existing = acc.find(d => d.date === date);
+      if (existing) {
+        existing.cumulative = index + 1;
+        existing.daily += 1;
+      } else {
+        acc.push({
+          date,
+          cumulative: index + 1,
+          daily: 1
+        });
+      }
+      return acc;
+    }, []);
+
+  // Document type/systems distribution (third chart for non-EMCT)
+  const typeDistributionCounts = data.reduce((acc: any, item: any) => {
+    let itemType;
+    if (type === "documents") {
+      // For documents, use documentType
+      itemType = item.documentType || 'General';
+    } else {
+      // For shop drawings, use system
+      itemType = item.system || 'General';
+    }
+    acc[itemType] = (acc[itemType] || 0) + 1;
+    return acc;
+  }, {});
+
+  const typeDistributionData = Object.entries(typeDistributionCounts).map(([itemType, count]) => ({
+    name: itemType,
+    value: Number(count) || 0,
+    color: COLORS[itemType as keyof typeof COLORS] || COLORS.default
+  }));
+
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className={`grid gap-6 ${project === 'emct' && type === "documents" ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'}`}>
       {/* First Chart - For EMCT: Discipline Types (Bar), For Others: Status Distribution (Pie) */}
       <Card>
         <CardHeader>
@@ -219,8 +259,8 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         </CardContent>
       </Card>
 
-      {/* Third Chart - Status Code Distribution for EMCT */}
-      {project === 'emct' && type === "documents" && (
+      {/* Third Chart - For EMCT: Status Code Distribution, For Others: Document Types/Systems Distribution */}
+      {project === 'emct' && type === "documents" ? (
         <Card>
           <CardHeader>
             <CardTitle>Status Code Distribution</CardTitle>
@@ -248,6 +288,71 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
                   </Pie>
                   <Tooltip content={CustomTooltip} />
                 </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {type === "documents" ? "Document Types" : "Systems Distribution"}
+            </CardTitle>
+            <CardDescription>
+              Distribution by {type === "documents" ? "document type" : "system"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={typeDistributionData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {typeDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={CustomTooltip} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Fourth Chart - Submission Timeline (For South Terminal only) */}
+      {!(project === 'emct' && type === "documents") && timelineData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Submission Timeline</CardTitle>
+            <CardDescription>
+              Cumulative submissions over time
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area 
+                    type="monotone" 
+                    dataKey="cumulative" 
+                    stroke="#8884d8" 
+                    fill="#8884d8" 
+                    fillOpacity={0.3} 
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
