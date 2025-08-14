@@ -192,9 +192,24 @@ export class EmctExcelService {
           mappedDiscipline = 'General';
         }
         
-        const subDate = row[headers.findIndex((h: any) => 
-          String(h || '').toLowerCase().includes('sub_date')
-        )] || row[4] || null;
+        // Find Sub_date column index
+        const subDateIndex = headers.findIndex((h: any) => {
+          const headerStr = String(h || '').toLowerCase().trim();
+          return headerStr === 'sub_date' || headerStr.includes('sub_date') || 
+                 headerStr.includes('submission') || headerStr.includes('date');
+        });
+        
+        const subDate = subDateIndex >= 0 ? row[subDateIndex] : null;
+        
+        // Debug submission date extraction for first few rows
+        if (processedCount < 5) {
+          console.log(`🗓️ Row ${i} Sub_date extraction:`, {
+            subDateIndex,
+            headerAtIndex: subDateIndex >= 0 ? headers[subDateIndex] : 'N/A',
+            rawSubDate: subDate,
+            documentName: documentName.substring(0, 30)
+          });
+        }
         
         // Show more lenient processing - log what we're skipping
         if (!documentName || documentName.trim() === '') {

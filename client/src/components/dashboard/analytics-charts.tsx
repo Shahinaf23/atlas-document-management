@@ -213,7 +213,7 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
   });
 
   return (
-    <div className={`grid gap-6 ${project === 'emct' && type === "documents" ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'}`}>
+    <div className={`grid gap-6 ${project === 'emct' && type === "documents" ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2'}`}>
       {/* First Chart - For EMCT: Discipline Types (Bar), For Others: Status Distribution (Pie) */}
       <Card>
         <CardHeader>
@@ -396,8 +396,8 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         </Card>
       )}
 
-      {/* Fourth Chart - Submission Timeline (For South Terminal only) */}
-      {!(project === 'emct' && type === "documents") && timelineData.length > 0 && (
+      {/* Fourth Chart - Submission Timeline (For both South Terminal and EMCT) */}
+      {timelineData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Submission Timeline</CardTitle>
