@@ -13,8 +13,49 @@ const COLORS = {
   'RTN (ATLS)': '#f59e0b', 'RTN(ATLS)': '#f59e0b',
   'RTN (AS)': '#f59e0b', 'RTN(AS)': '#f59e0b',
   'General': '#6b7280',
+  
+  // Document Type colors (vibrant colors for South Terminal charts)
+  'PQ': '#ef4444', // Red
+  'MTS': '#d97706', // Orange/Gold  
+  'MST': '#22c55e', // Green
+  'ITP': '#8b5cf6', // Purple
+  'TCD': '#8b5cf6', // Purple
+  'Warranty': '#d97706', // Orange
+  'BL': '#22c55e', // Green
+  'SDD': '#06b6d4', // Cyan
+  'OMM': '#ec4899', // Pink
+  'OTM': '#ef4444', // Red
+  'ICD': '#3b82f6', // Blue
+  
+  // System colors for shop drawings
+  'CNE': '#ef4444', // Red
+  'SCN': '#22c55e', // Green
+  'BCE': '#3b82f6', // Blue
+  'IDS': '#8b5cf6', // Purple
+  'BRS': '#06b6d4', // Cyan
+  'FIDS': '#ec4899', // Pink
+  'CCTV': '#d97706', // Orange
+  'PA': '#10b981', // Emerald
+  'WIFI': '#f59e0b', // Amber
+  
   'default': '#6b7280'
 };
+
+// Color palette for charts that need distinct colors
+const CHART_COLORS = [
+  '#ef4444', // Red
+  '#d97706', // Orange
+  '#22c55e', // Green  
+  '#8b5cf6', // Purple
+  '#06b6d4', // Cyan
+  '#ec4899', // Pink
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#84cc16', // Lime
+  '#06b6d4', // Sky
+  '#8b5cf6'  // Violet
+];
 
 interface AnalyticsChartsProps {
   data: any[];
@@ -137,10 +178,10 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
     return acc;
   }, {});
 
-  const typeDistributionData = Object.entries(typeDistributionCounts).map(([itemType, count]) => ({
+  const typeDistributionData = Object.entries(typeDistributionCounts).map(([itemType, count], index) => ({
     name: itemType,
     value: Number(count) || 0,
-    color: COLORS[itemType as keyof typeof COLORS] || COLORS.default
+    color: COLORS[itemType as keyof typeof COLORS] || CHART_COLORS[index % CHART_COLORS.length]
   }));
 
   return (
@@ -348,8 +389,8 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
                   <Area 
                     type="monotone" 
                     dataKey="cumulative" 
-                    stroke="#8884d8" 
-                    fill="#8884d8" 
+                    stroke="#8b5cf6" 
+                    fill="#8b5cf6" 
                     fillOpacity={0.3} 
                   />
                 </AreaChart>
