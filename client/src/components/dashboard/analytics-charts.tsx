@@ -5,8 +5,9 @@ const COLORS = {
   // Status colors
   'CODE1': '#10b981', 'Approved': '#10b981',
   'CODE2': '#f59e0b', 'Pending': '#f59e0b',
-  'CODE3': '#ef4444', 'Rejected': '#ef4444', 'Reject with comments': '#ef4444',
-  'CODE4': '#6b7280', 'Under review': '#8b5cf6', 'UR': '#8b5cf6',
+  'CODE3': '#ef4444', 'Reject with comments': '#ef4444',
+  'CODE4': '#dc2626', 'Rejected': '#dc2626',
+  'Under review': '#8b5cf6', 'UR': '#8b5cf6',
   'UR (ATJV)': '#8b5cf6', 'UR(ATJV)': '#8b5cf6',
   'UR (DAR)': '#8b5cf6', 'UR(DAR)': '#8b5cf6',
   'AR (ATJV)': '#10b981', 'AR(ATJV)': '#10b981',
@@ -137,6 +138,9 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         case 'UR(DAR)':
         case 'UR (DAR)':
           status = 'Under review';
+          break;
+        default:
+          // Keep original status for other values
           break;
       }
     }
