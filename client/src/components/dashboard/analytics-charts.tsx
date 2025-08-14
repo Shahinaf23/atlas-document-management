@@ -137,11 +137,11 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
       <Card>
         <CardHeader>
           <CardTitle>
-            {project === 'emct' && type === "documents" ? "Discipline Types" : "Status Distribution"}
+            {project === 'emct' && type === "documents" ? "Status Code Distribution" : "Status Distribution"}
           </CardTitle>
           <CardDescription>
             {project === 'emct' && type === "documents" 
-              ? "Discipline breakdown for all documents"
+              ? "Status code breakdown for all documents"
               : `Current status breakdown for all ${type === "documents" ? "documents" : "shop drawings"}`
             }
           </CardDescription>
@@ -220,13 +220,13 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         <CardHeader>
           <CardTitle>
             {type === "documents" 
-              ? (project === 'emct' ? "Status code distribution" : "Document Types")
+              ? (project === 'emct' ? "Discipline Types" : "Document Types")
               : "Systems Distribution"
             }
           </CardTitle>
           <CardDescription>
             Distribution by {type === "documents" 
-              ? (project === 'emct' ? "status code" : "document type")
+              ? (project === 'emct' ? "discipline" : "document type")
               : "system"
             }
           </CardDescription>
