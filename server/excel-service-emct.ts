@@ -184,8 +184,17 @@ export class EmctExcelService {
           continue;
         }
         
-        // Remove strict filtering to see all data
-        // if (documentName.toLowerCase().includes('document') && documentName.length < 15) continue;
+        // Filter out header/metadata rows based on common patterns
+        const docNameLower = documentName.toLowerCase().trim();
+        if (docNameLower === 'contractor reference' || 
+            docNameLower === 'latest submission' || 
+            docNameLower === 'sd_c' ||
+            docNameLower === 'project submittal' ||
+            docNameLower.includes('reference') && documentName.length < 30 ||
+            docNameLower.includes('submission') && documentName.length < 30) {
+          console.log(`🚫 Filtering out header/metadata row ${i}: "${documentName}"`);
+          continue;
+        }
         
         // Parse submission date
         let submissionDate = new Date();
