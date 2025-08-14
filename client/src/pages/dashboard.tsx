@@ -81,6 +81,26 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   
   // Determine active tab based on URL
   const getTabFromUrl = (path: string): TabType => {
+    // Handle query parameter format: /?project=emct&section=documents
+    const urlParams = new URLSearchParams(window.location.search);
+    const project = urlParams.get('project');
+    const section = urlParams.get('section');
+    
+    if (project === 'emct') {
+      if (section === 'documents') return "emct-documents";
+      if (section === 'shop-drawings') return "emct-shop-drawings";
+      if (section === 'admin') return "emct-admin";
+      return "emct-documents"; // Default to documents for EMCT
+    }
+    
+    if (project === 'jeddah') {
+      if (section === 'documents') return "jeddah-documents";
+      if (section === 'shop-drawings') return "jeddah-shop-drawings";
+      if (section === 'admin') return "jeddah-admin";
+      return "jeddah-overview"; // Default to overview for Jeddah
+    }
+    
+    // Handle path-based routing (legacy)
     if (path.startsWith('/emct/documents')) return "emct-documents";
     if (path.startsWith('/emct/shop-drawings')) return "emct-shop-drawings";
     if (path.startsWith('/emct/admin')) return "emct-admin";
