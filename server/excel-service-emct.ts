@@ -158,7 +158,7 @@ export class EmctExcelService {
         }
         
         // Show details for first few rows
-        if (processedCount < 5) {
+        if (processedCount < 8) {
           console.log(`🔍 Processing row ${i}:`, row.slice(0, 10).map((cell, idx) => `${idx}:${cell}`));
         }
         
@@ -191,17 +191,31 @@ export class EmctExcelService {
         // Filter out header/metadata rows based on common patterns
         const docNameLower = documentName.toLowerCase().trim();
         const statusUpper = rawStatus.toUpperCase();
-        if (docNameLower === 'contractor reference' || 
-            docNameLower === 'latest submission' || 
-            docNameLower === 'sd_c' ||
-            docNameLower === 'dname' ||
-            docNameLower === 'project submittal' ||
-            statusUpper === 'R_APP_S' ||
-            rawStatus === 'R_APP_S' ||
-            documentName === 'SD_C' ||
-            docNameLower.includes('reference') && documentName.length < 30 ||
-            docNameLower.includes('submission') && documentName.length < 30) {
-          console.log(`🚫 Filtering out header/metadata row ${i}: "${documentName}" (status: "${rawStatus}")`);
+        const documentTypeLower = documentType.toLowerCase().trim();
+        
+        // Filter out header rows by checking for exact header values
+        const isHeaderRow = (
+          documentName === 'DOCUMENT' || documentName === 'NAME' ||
+          documentType === 'DOCUMENT' || documentType === 'TYPE' ||
+          docNameLower === 'contractor reference' || 
+          docNameLower === 'latest submission' || 
+          docNameLower === 'sd_c' ||
+          docNameLower === 'dname' ||
+          docNameLower === 'document' ||
+          docNameLower === 'name' ||
+          docNameLower === 'project submittal' ||
+          documentTypeLower === 'document' ||
+          documentTypeLower === 'name' ||
+          documentTypeLower === 'type' ||
+          statusUpper === 'R_APP_S' ||
+          rawStatus === 'R_APP_S' ||
+          documentName === 'SD_C' ||
+          docNameLower.includes('reference') && documentName.length < 30 ||
+          docNameLower.includes('submission') && documentName.length < 30
+        );
+        
+        if (isHeaderRow) {
+          console.log(`🚫 Filtering out header/metadata row ${i}: "${documentName}" (status: "${rawStatus}", type: "${documentType}")`);
           continue;
         }
         
@@ -260,13 +274,42 @@ export class EmctExcelService {
         return acc;
       }, {});
       
+      // Filter out any remaining header entries that made it through the initial filter
+      const cleanedDocuments = processedDocuments.filter(doc => {
+        const title = doc.title?.toLowerCase().trim() || '';
+        const type = doc.documentType?.toLowerCase().trim() || '';
+        
+        // Remove any documents with header-like titles
+        const isHeader = (
+          title === 'document' || title === 'name' || 
+          type === 'document' || type === 'type' ||
+          title.length < 5 ||
+          doc.documentId?.includes('EMCT-DOC-1') || 
+          doc.documentId?.includes('EMCT-DOC-2')
+        );
+        
+        if (isHeader) {
+          console.log(`🧹 Removing header entry: ${doc.documentId} - "${doc.title}"`);
+          return false;
+        }
+        return true;
+      });
+      
+      // Reassign IDs to cleaned documents
+      const finalDocuments = cleanedDocuments.map((doc, index) => ({
+        ...doc,
+        id: index + 1,
+        documentId: `EMCT-DOC-${index + 1}`,
+        serialNumber: index + 1
+      }));
+      
       // Add a test CODE3 entry to verify UI functionality (if no CODE3 exists)
-      const hasCode3 = processedDocuments.some(doc => doc.currentStatus === 'CODE3');
+      const hasCode3 = finalDocuments.some(doc => doc.currentStatus === 'CODE3');
       if (!hasCode3) {
-        processedDocuments.push({
-          id: processedDocuments.length + 1,
+        finalDocuments.push({
+          id: finalDocuments.length + 1,
           documentId: `EMCT-DOC-TEST-CODE3`,
-          serialNumber: processedDocuments.length + 1,
+          serialNumber: finalDocuments.length + 1,
           title: 'TEST: Quality Management Plan - CODE3 Test Document',
           discipline: 'General',
           currentStatus: 'CODE3',
@@ -280,10 +323,10 @@ export class EmctExcelService {
         });
         console.log('➕ Added test CODE3 document for UI verification');
       }
-
-      console.log(`✅ Loaded ${processedDocuments.length} EMCT document submittals`);
+      
+      console.log(`✅ Loaded ${finalDocuments.length} EMCT document submittals`);
       console.log('📊 Status distribution:', statusDistribution);
-      this.documentsCache = processedDocuments;
+      this.documentsCache = finalDocuments;
       
     } catch (error) {
       console.error('❌ Error loading EMCT document submittals:', error);
