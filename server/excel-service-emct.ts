@@ -68,11 +68,14 @@ export class EmctExcelService {
       
       const workbook = xlsx.read(buffer, { type: 'buffer' });
       
+      console.log('📋 Available worksheets:', workbook.SheetNames);
+      
       // Find the CURRENT STATUS worksheet
       let currentStatusSheet = null;
       let sheetName = '';
       
       for (const name of workbook.SheetNames) {
+        console.log(`🔍 Checking worksheet: "${name}"`);
         if (name.toLowerCase().includes('current') && name.toLowerCase().includes('status')) {
           currentStatusSheet = workbook.Sheets[name];
           sheetName = name;
@@ -91,6 +94,15 @@ export class EmctExcelService {
       
       const rawData = xlsx.utils.sheet_to_json(currentStatusSheet, { header: 1 }) as any[][];
       console.log(`🔍 EMCT Document file has ${rawData.length} total rows`);
+      
+      // Debug: Show first 15 rows to understand structure
+      console.log('🔍 First 15 rows of CURRENT STATUS worksheet:');
+      for (let i = 0; i < Math.min(rawData.length, 15); i++) {
+        const row = rawData[i];
+        if (row && Array.isArray(row)) {
+          console.log(`Row ${i}:`, row.slice(0, 15).map((cell, idx) => `${idx}:${cell}`));
+        }
+      }
       
       // Find header row by looking for key columns
       let headerRowIndex = -1;
@@ -131,9 +143,19 @@ export class EmctExcelService {
       };
       
       // Process data rows starting after header
+      console.log(`🔍 Processing ${rawData.length - headerRowIndex - 1} data rows starting from row ${headerRowIndex + 1}`);
+      
       for (let i = headerRowIndex + 1; i < rawData.length; i++) {
         const row = rawData[i];
-        if (!row || !Array.isArray(row) || row.length === 0) continue;
+        if (!row || !Array.isArray(row) || row.length === 0) {
+          console.log(`⏭️ Skipping empty row ${i}`);
+          continue;
+        }
+        
+        // Show details for first few rows
+        if (processedCount < 5) {
+          console.log(`🔍 Processing row ${i}:`, row.slice(0, 10).map((cell, idx) => `${idx}:${cell}`));
+        }
         
         // Extract data based on expected column structure
         const documentName = String(row[headers.findIndex((h: any) => 
@@ -154,9 +176,16 @@ export class EmctExcelService {
           String(h || '').toLowerCase().includes('sub_date')
         )] || row[4] || null;
         
-        // Skip if no meaningful document name
-        if (!documentName || documentName.length < 5) continue;
-        if (documentName.toLowerCase().includes('document') && documentName.length < 15) continue;
+        // Show more lenient processing - log what we're skipping
+        if (!documentName || documentName.length < 3) {
+          if (processedCount < 10) {
+            console.log(`⏭️ Skipping row ${i}: no document name or too short: "${documentName}"`);
+          }
+          continue;
+        }
+        
+        // Remove strict filtering to see all data
+        // if (documentName.toLowerCase().includes('document') && documentName.length < 15) continue;
         
         // Parse submission date
         let submissionDate = new Date();
