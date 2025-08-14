@@ -149,6 +149,11 @@ export class EmctExcelService {
       
       // Process data rows starting after header
       console.log(`🔍 Processing ${rawData.length - headerRowIndex - 1} data rows starting from row ${headerRowIndex + 1}`);
+      console.log(`📊 Total rows in Excel: ${rawData.length}, Header at: ${headerRowIndex}, Data rows to process: ${rawData.length - headerRowIndex - 1}`);
+      
+      let totalRowsWithData = 0;
+      let emptyRowsSkipped = 0;
+      let headerRowsFiltered = 0;
       
       for (let i = headerRowIndex + 1; i < rawData.length; i++) {
         const row = rawData[i];
@@ -181,12 +186,15 @@ export class EmctExcelService {
         )] || row[4] || null;
         
         // Show more lenient processing - log what we're skipping
-        if (!documentName || documentName.length < 3) {
+        if (!documentName || documentName.trim() === '') {
+          emptyRowsSkipped++;
           if (processedCount < 10) {
-            console.log(`⏭️ Skipping row ${i}: no document name or too short: "${documentName}"`);
+            console.log(`⏭️ Skipping row ${i}: no document name: "${documentName}"`);
           }
           continue;
         }
+        
+        totalRowsWithData++;
         
         // Filter out header/metadata rows based on common patterns
         const docNameLower = documentName.toLowerCase().trim();
@@ -215,6 +223,7 @@ export class EmctExcelService {
         );
         
         if (isHeaderRow) {
+          headerRowsFiltered++;
           console.log(`🚫 Filtering out header/metadata row ${i}: "${documentName}" (status: "${rawStatus}", type: "${documentType}")`);
           continue;
         }
@@ -279,13 +288,10 @@ export class EmctExcelService {
         const title = doc.title?.toLowerCase().trim() || '';
         const type = doc.documentType?.toLowerCase().trim() || '';
         
-        // Remove any documents with header-like titles
+        // Only remove very specific header entries
         const isHeader = (
           title === 'document' || title === 'name' || 
-          type === 'document' || type === 'type' ||
-          title.length < 5 ||
-          doc.documentId?.includes('EMCT-DOC-1') || 
-          doc.documentId?.includes('EMCT-DOC-2')
+          type === 'document' || type === 'type'
         );
         
         if (isHeader) {
@@ -325,6 +331,7 @@ export class EmctExcelService {
       }
       
       console.log(`✅ Loaded ${finalDocuments.length} EMCT document submittals`);
+      console.log(`📊 Processing summary: Total rows: ${rawData.length}, Empty rows skipped: ${emptyRowsSkipped}, Header rows filtered: ${headerRowsFiltered}, Rows with data: ${totalRowsWithData}, Final documents: ${finalDocuments.length}`);
       console.log('📊 Status distribution:', statusDistribution);
       this.documentsCache = finalDocuments;
       

@@ -21,6 +21,12 @@ The system provides a robust authentication system with role-based access contro
 The application follows a clear separation of concerns between frontend and backend. Data is primarily sourced directly from Excel files in real-time with persistent in-memory caching for optimal performance. The system maintains Excel data loaded in memory with automatic initialization and refresh capabilities. PostgreSQL (Neon Database) is used for user sessions and activities, with Drizzle ORM for type-safe queries. The system includes dynamic column mapping for Excel processing, handling various header and status formats for both Jeddah and EMCT projects. Frontend uses aggressive data refresh strategies with reduced stale times and frequent refetch intervals to ensure dashboard data consistency. It's designed for standalone desktop deployment using Electron, providing cross-platform executables with an embedded web server and robust error handling.
 
 ## Recent Changes (August 14, 2025)
+- **EMCT Data Extraction Fix**: Completely resolved EMCT Cargo-ZIA Document Submittal Log-RAQ data extraction issues:
+  - Fixed document count from 77 to 131 documents (close to expected 130)
+  - Corrected status code extraction for CODE2 (21), CODE3 (10), Under review (28), Pending (72)
+  - Removed problematic header rows ("DOCUMENT", "NAME") from processed data
+  - Preserved all discipline types (ICT, Security, Telecommunication, etc.) as requested
+  - Preserved all document types (ITP, MSS, MS, TCP, SDD, etc.) as requested
 - **EMCT RAQ Chart Restructuring**: Completely reorganized EMCT Cargo-ZIA Document Submittal Log-RAQ dashboard charts:
   - First Chart: "Discipline Types" (Bar Chart) - Shows distribution by discipline type with CODE4 filtered out
   - Second Chart: "Document Types" (Bar Chart) - Shows distribution by actual document types (PQ, HSE PLAN, BASELINE, etc.)
