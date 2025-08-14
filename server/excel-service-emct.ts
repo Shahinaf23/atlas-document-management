@@ -104,16 +104,17 @@ export class EmctExcelService {
         }
       }
       
-      // Find header row by looking for key columns
+      // Find header row by looking for key columns specifically "Sub_Date"
       let headerRowIndex = -1;
       for (let i = 0; i < Math.min(rawData.length, 15); i++) {
         const row = rawData[i];
         if (row && Array.isArray(row)) {
           const rowStr = row.join('|').toLowerCase();
-          if (rowStr.includes('status_approval') || rowStr.includes('sub_date') || 
-              (rowStr.includes('status') && rowStr.includes('document'))) {
+          // Look for the exact pattern we found: Sub_Date column
+          if (rowStr.includes('sub_date') || rowStr.includes('r_type') || 
+              (rowStr.includes('dname') && rowStr.includes('spec_desc'))) {
             headerRowIndex = i;
-            console.log('📋 Found header row at index:', i, row);
+            console.log('📋 Found EMCT header row at index:', i, row);
             break;
           }
         }
@@ -126,6 +127,33 @@ export class EmctExcelService {
       
       const headers = rawData[headerRowIndex] || [];
       console.log('🏷️ EMCT Document headers available:', headers.map((h: any, idx: number) => `${idx}:${h}`));
+      
+      // Find Sub_date column index with detailed logging
+      const subDateColumnIndex = headers.findIndex((h: any) => {
+        const headerStr = String(h || '').toLowerCase().trim();
+        return headerStr === 'sub_date' || headerStr.includes('sub_date') || 
+               headerStr.includes('submission') || headerStr.includes('submit') ||
+               headerStr.includes('date') || headerStr === 'sub date';
+      });
+      
+      console.log('🗓️ Sub_date column detection:', {
+        found: subDateColumnIndex >= 0,
+        index: subDateColumnIndex,
+        headerName: subDateColumnIndex >= 0 ? headers[subDateColumnIndex] : 'Not found',
+        totalHeaders: headers.length,
+        allHeaders: headers
+      });
+      
+      // If no Sub_date column found, try alternate approaches
+      if (subDateColumnIndex < 0) {
+        console.log('⚠️ Sub_date column not found in headers. Checking for any date-related columns...');
+        headers.forEach((header: any, index: number) => {
+          const headerStr = String(header || '').toLowerCase();
+          if (headerStr.includes('date') || headerStr.includes('time') || headerStr.includes('submit')) {
+            console.log(`📅 Found potential date column at index ${index}: "${header}"`);
+          }
+        });
+      }
       const processedDocuments: any[] = [];
       let processedCount = 0;
       
@@ -192,21 +220,17 @@ export class EmctExcelService {
           mappedDiscipline = 'General';
         }
         
-        // Find Sub_date column index
-        const subDateIndex = headers.findIndex((h: any) => {
-          const headerStr = String(h || '').toLowerCase().trim();
-          return headerStr === 'sub_date' || headerStr.includes('sub_date') || 
-                 headerStr.includes('submission') || headerStr.includes('date');
-        });
-        
-        const subDate = subDateIndex >= 0 ? row[subDateIndex] : null;
+        // Use the pre-detected Sub_date column index
+        const subDate = subDateColumnIndex >= 0 ? row[subDateColumnIndex] : null;
         
         // Debug submission date extraction for first few rows
         if (processedCount < 5) {
           console.log(`🗓️ Row ${i} Sub_date extraction:`, {
-            subDateIndex,
-            headerAtIndex: subDateIndex >= 0 ? headers[subDateIndex] : 'N/A',
+            subDateColumnIndex,
+            headerAtIndex: subDateColumnIndex >= 0 ? headers[subDateColumnIndex] : 'N/A',
             rawSubDate: subDate,
+            subDateType: typeof subDate,
+            rowData: row.slice(0, 10),
             documentName: documentName.substring(0, 30)
           });
         }
