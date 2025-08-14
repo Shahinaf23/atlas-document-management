@@ -22,6 +22,7 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
   const [vendorFilter, setVendorFilter] = useState("all");
   const [systemFilter, setSystemFilter] = useState("all");
   const [subSystemFilter, setSubSystemFilter] = useState("all");
+  const [documentTypeFilter, setDocumentTypeFilter] = useState("all");
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,6 +34,7 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
   const deferredVendorFilter = useDeferredValue(vendorFilter);
   const deferredSystemFilter = useDeferredValue(systemFilter);
   const deferredSubSystemFilter = useDeferredValue(subSystemFilter);
+  const deferredDocumentTypeFilter = useDeferredValue(documentTypeFilter);
 
   // Get unique values for filters
   const uniqueStatuses = useMemo(() => {
@@ -66,8 +68,17 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
     return [];
   }, [data, type]);
 
+  // Add unique document types for EMCT documents
+  const uniqueDocumentTypes = useMemo(() => {
+    if (type === "documents" && project === "emct") {
+      const docTypes = Array.from(new Set(data.map(item => item.documentType).filter(Boolean)));
+      return docTypes.sort();
+    }
+    return [];
+  }, [data, type, project]);
+
   // Optimized filter function with early returns
-  const filterData = useCallback((items: any[], search: string, status: string, vendor: string, system: string, subSystem: string) => {
+  const filterData = useCallback((items: any[], search: string, status: string, vendor: string, system: string, subSystem: string, documentType: string) => {
     if (!items?.length) return [];
     
     const searchLower = search.toLowerCase();
@@ -99,13 +110,16 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
       // Sub-system filter (shop drawings only)  
       if (type === "shop-drawings" && subSystem !== "all" && item.subSystem !== subSystem) return false;
       
+      // Document type filter (EMCT documents only)
+      if (type === "documents" && project === "emct" && documentType !== "all" && item.documentType !== documentType) return false;
+      
       return true;
     });
-  }, [type]);
+  }, [type, project]);
 
   // Filter and sort data with deferred values
   const filteredAndSortedData = useMemo(() => {
-    const filtered = filterData(data, deferredSearchTerm, deferredStatusFilter, deferredVendorFilter, deferredSystemFilter, deferredSubSystemFilter);
+    const filtered = filterData(data, deferredSearchTerm, deferredStatusFilter, deferredVendorFilter, deferredSystemFilter, deferredSubSystemFilter, deferredDocumentTypeFilter);
 
     if (sortField && sortDirection) {
       filtered.sort((a, b) => {
@@ -131,7 +145,7 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
     }
 
     return filtered;
-  }, [filterData, data, deferredSearchTerm, deferredStatusFilter, deferredVendorFilter, deferredSystemFilter, deferredSubSystemFilter, sortField, sortDirection]);
+  }, [filterData, data, deferredSearchTerm, deferredStatusFilter, deferredVendorFilter, deferredSystemFilter, deferredSubSystemFilter, deferredDocumentTypeFilter, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
     startTransition(() => {
@@ -169,6 +183,12 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
   const handleSubSystemFilterChange = useCallback((value: string) => {
     startTransition(() => {
       setSubSystemFilter(value);
+    });
+  }, []);
+  
+  const handleDocumentTypeFilterChange = useCallback((value: string) => {
+    startTransition(() => {
+      setDocumentTypeFilter(value);
     });
   }, []);
 
@@ -329,6 +349,20 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
                 <SelectItem value="all">All Vendors</SelectItem>
                 {uniqueVendors.map(vendor => (
                   <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {type === "documents" && project === 'emct' && (
+            <Select value={documentTypeFilter} onValueChange={handleDocumentTypeFilterChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by doc type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Document Types</SelectItem>
+                {uniqueDocumentTypes.map(docType => (
+                  <SelectItem key={docType} value={docType}>{docType}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
