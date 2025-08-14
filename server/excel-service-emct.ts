@@ -133,11 +133,11 @@ export class EmctExcelService {
         const status = String(rawStatus || '').trim();
         
         // User-defined status mapping
-        if (status === '2') return 'Approved';
-        if (status === '3') return 'Reject with comments';
-        if (status === '4') return 'Rejected';
+        if (status === '2') return 'CODE2';
+        if (status === '3') return 'CODE3';
+        if (status === '4') return 'CODE4';
         if (status.toLowerCase() === 'ur dar' || status.toLowerCase() === 'ur_dar') return 'Under review';
-        if (status === '---' || status === '' || status === 'undefined') return 'Pending';
+        if (status === '---' || status === '' || status === 'undefined') return 'PENDING';
         
         return status; // Keep original if no mapping found
       };
@@ -167,6 +167,9 @@ export class EmctExcelService {
         const discipline = String(row[headers.findIndex((h: any) => 
           String(h || '').toLowerCase().includes('discipline')
         )] || row[2] || '').trim();
+        
+        // Map discipline names
+        const mappedDiscipline = discipline.toLowerCase() === 'general' ? 'CODE4' : discipline;
         
         const rawStatus = String(row[headers.findIndex((h: any) => 
           String(h || '').toLowerCase().includes('status_approval')
@@ -219,10 +222,10 @@ export class EmctExcelService {
           documentId: `EMCT-DOC-${processedCount + 1}`,
           serialNumber: processedCount + 1,
           title: documentName,
-          discipline: discipline || 'General',
+          discipline: mappedDiscipline || 'CODE4',
           currentStatus: mapStatus(rawStatus),
           category: 'Project Submittal',
-          documentType: discipline || 'General',
+          documentType: mappedDiscipline || 'CODE4',
           project: 'EMCT Cargo-ZIA',
           submittedDate: submissionDate,
           submittedAt: submissionDate,

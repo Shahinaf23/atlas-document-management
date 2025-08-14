@@ -4,9 +4,13 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Color mapping for different statuses and categories
 const COLORS = {
   'Approved': '#10b981',
+  'CODE2': '#10b981', // EMCT specific
+  'CODE3': '#f97316', // EMCT specific  
+  'CODE4': '#3b82f6', // EMCT specific
   'Under review': '#f59e0b', // EMCT specific
   'Under Review': '#f59e0b',
   'Pending': '#ef4444',
+  'PENDING': '#ef4444', // EMCT specific
   'Reject with comments': '#f97316', // EMCT specific
   'Rejected': '#dc2626', // EMCT specific
   'Submitted': '#3b82f6',
@@ -23,17 +27,20 @@ interface AnalyticsChartsProps {
 }
 
 export function AnalyticsCharts({ data, documents, shopDrawings, type, project = "jeddah" }: AnalyticsChartsProps) {
-  // Status distribution data
-  const statusCounts = data.reduce((acc: any, item: any) => {
-    const status = item.currentStatus || '---';
-    acc[status] = (acc[status] || 0) + 1;
+  // For EMCT documents, we swap the data - first chart shows disciplines, second shows status
+  const isEMCTDocs = project === 'emct' && type === "documents";
+  
+  // Status distribution data (or discipline data for EMCT first chart)
+  const firstChartCounts = data.reduce((acc: any, item: any) => {
+    const key = isEMCTDocs ? (item.discipline || 'CODE4') : (item.currentStatus || '---');
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
-  const statusData = Object.entries(statusCounts).map(([status, count]) => ({
-    name: status,
+  const statusData = Object.entries(firstChartCounts).map(([key, count]) => ({
+    name: key,
     value: Number(count) || 0,
-    color: COLORS[status as keyof typeof COLORS] || COLORS.default
+    color: COLORS[key as keyof typeof COLORS] || COLORS.default
   }));
 
   // Discipline distribution data (replacing vendor for EMCT documents)
@@ -65,12 +72,13 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
     }));
 
   // Document type distribution (for documents) or Systems distribution (for shop drawings)
-  const typeCounts = data.reduce((acc: any, item: any) => {
+  // For EMCT documents, second chart shows status codes instead of disciplines
+  const secondChartCounts = data.reduce((acc: any, item: any) => {
     let itemType;
     if (type === "documents") {
       if (project === 'emct') {
-        // For EMCT, use discipline for type chart
-        itemType = item.discipline || 'General';
+        // For EMCT second chart, use status codes
+        itemType = item.currentStatus || 'PENDING';
       } else {
         // For Jeddah, use documentType
         itemType = item.documentType || 'General';
@@ -83,7 +91,7 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
     return acc;
   }, {});
 
-  const typeData = Object.entries(typeCounts).map(([itemType, count]) => ({
+  const typeData = Object.entries(secondChartCounts).map(([itemType, count]) => ({
     name: itemType,
     value: Number(count) || 0,
     color: COLORS[itemType as keyof typeof COLORS] || COLORS.default
@@ -128,9 +136,14 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
       {/* Status Distribution Pie Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Status Distribution</CardTitle>
+          <CardTitle>
+            {project === 'emct' && type === "documents" ? "Discipline Types" : "Status Distribution"}
+          </CardTitle>
           <CardDescription>
-            Current status breakdown for all {type === "documents" ? "documents" : "shop drawings"}
+            {project === 'emct' && type === "documents" 
+              ? "Discipline breakdown for all documents"
+              : `Current status breakdown for all ${type === "documents" ? "documents" : "shop drawings"}`
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -207,13 +220,13 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         <CardHeader>
           <CardTitle>
             {type === "documents" 
-              ? (project === 'emct' ? "Discipline Types" : "Document Types")
+              ? (project === 'emct' ? "Status code distribution" : "Document Types")
               : "Systems Distribution"
             }
           </CardTitle>
           <CardDescription>
             Distribution by {type === "documents" 
-              ? (project === 'emct' ? "discipline" : "document type")
+              ? (project === 'emct' ? "status code" : "document type")
               : "system"
             }
           </CardDescription>
