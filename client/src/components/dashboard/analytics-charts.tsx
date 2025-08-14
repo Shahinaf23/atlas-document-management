@@ -41,20 +41,20 @@ const COLORS = {
   'default': '#6b7280'
 };
 
-// Color palette for charts that need distinct colors
+// Color palette for charts that need distinct colors - matching the reference image
 const CHART_COLORS = [
-  '#ef4444', // Red
-  '#d97706', // Orange
-  '#22c55e', // Green  
-  '#8b5cf6', // Purple
-  '#06b6d4', // Cyan
-  '#ec4899', // Pink
-  '#3b82f6', // Blue
-  '#10b981', // Emerald
-  '#f59e0b', // Amber
-  '#84cc16', // Lime
-  '#06b6d4', // Sky
-  '#8b5cf6'  // Violet
+  '#ef4444', // Red for PQ
+  '#d97706', // Gold/Orange for MTS
+  '#22c55e', // Green for MST 
+  '#8b5cf6', // Purple for ITP
+  '#06b6d4', // Cyan for SDD
+  '#ec4899', // Pink for OMM
+  '#3b82f6', // Blue for ICD
+  '#10b981', // Emerald for BL
+  '#f59e0b', // Amber for Warranty
+  '#84cc16', // Lime for TCD
+  '#ef4444', // Red for OTM
+  '#22c55e'  // Green (duplicate for additional types)
 ];
 
 interface AnalyticsChartsProps {
@@ -178,11 +178,15 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
     return acc;
   }, {});
 
-  const typeDistributionData = Object.entries(typeDistributionCounts).map(([itemType, count], index) => ({
-    name: itemType,
-    value: Number(count) || 0,
-    color: COLORS[itemType as keyof typeof COLORS] || CHART_COLORS[index % CHART_COLORS.length]
-  }));
+  const typeDistributionData = Object.entries(typeDistributionCounts).map(([itemType, count], index) => {
+    const color = COLORS[itemType as keyof typeof COLORS] || CHART_COLORS[index % CHART_COLORS.length];
+    console.log(`Document type: ${itemType}, Color: ${color}`);
+    return {
+      name: itemType,
+      value: Number(count) || 0,
+      color: color
+    };
+  });
 
   return (
     <div className={`grid gap-6 ${project === 'emct' && type === "documents" ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'}`}>
@@ -354,7 +358,6 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
                     labelLine={false}
                     label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                     outerRadius={80}
-                    fill="#8884d8"
                     dataKey="value"
                   >
                     {typeDistributionData.map((entry, index) => (
