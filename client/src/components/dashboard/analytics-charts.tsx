@@ -213,7 +213,7 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
   });
 
   return (
-    <div className={`grid gap-6 ${project === 'emct' && type === "documents" ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2'}`}>
+    <div className="grid gap-6 md:grid-cols-2">
       {/* First Chart - For EMCT: Discipline Types (Bar), For Others: Status Distribution (Pie) */}
       <Card>
         <CardHeader>
