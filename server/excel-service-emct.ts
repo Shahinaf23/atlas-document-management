@@ -100,7 +100,7 @@ export class EmctExcelService {
       for (let i = 0; i < Math.min(rawData.length, 15); i++) {
         const row = rawData[i];
         if (row && Array.isArray(row)) {
-          console.log(`Row ${i}:`, row.slice(0, 15).map((cell, idx) => `${idx}:${cell}`));
+          console.log(`Row ${i}:`, row.slice(0, 20).map((cell, idx) => `${idx}:${cell}`));
         }
       }
       
@@ -134,15 +134,16 @@ export class EmctExcelService {
         const status = String(rawStatus || '').trim();
         
         // EMCT-specific status mapping per user requirements
-        if (status === '2') return 'Approved';
-        if (status === '3') return 'Reject with comments';
-        if (status === '4') return 'Rejected';
-        if (status.toLowerCase() === 'ur dar' || status.toLowerCase() === 'ur_dar') return 'Under review';
-        if (status === '---' || status === '' || status === 'undefined') return 'Pending';
+        if (status === '2' || status === 'CODE2') return 'CODE2';
+        if (status === '3' || status === 'CODE3') return 'CODE3';
+        if (status === '4' || status === 'CODE4') return 'CODE4';
+        if (status.toLowerCase() === 'ur dar' || status.toLowerCase() === 'ur_dar' || status === 'URDAR') return 'URDAR';
+        if (status === '---' || status === '' || status === 'undefined' || status === 'null') return '---';
         
-        // Map legacy values to new naming convention
-        if (status.toLowerCase() === 'approved') return 'Approved';
-        if (status.toLowerCase() === 'rejected') return 'Rejected';
+        // Map legacy values to keep as original codes
+        if (status.toLowerCase() === 'approved') return 'CODE2';
+        if (status.toLowerCase() === 'rejected') return 'CODE4';
+        if (status.toLowerCase().includes('reject') && status.toLowerCase().includes('comment')) return 'CODE3';
         
         return status; // Keep original if no mapping found
       };
@@ -160,22 +161,45 @@ export class EmctExcelService {
         // Show details for first few rows
         if (processedCount < 5) {
           console.log(`🔍 Processing row ${i}:`, row.slice(0, 10).map((cell, idx) => `${idx}:${cell}`));
+          const statusCol = headers.findIndex((h: any) => 
+            String(h || '').toLowerCase().includes('status_approval') ||
+            String(h || '').toLowerCase().includes('current_status') ||
+            String(h || '').toLowerCase().includes('status')
+          );
+          console.log(`🔍 Status column index: ${statusCol}, raw status: "${row[statusCol] || row[3]}"`);
         }
         
-        // Extract data based on expected column structure
-        const documentName = String(row[headers.findIndex((h: any) => 
-          String(h || '').toLowerCase().includes('document') || 
-          String(h || '').toLowerCase().includes('name') || 
-          String(h || '').toLowerCase().includes('title')
-        )] || row[1] || '').trim();
+        // Extract data using corrected column mapping - the status was in the document name column!
+        // Need to find the actual status column by examining all columns
+        const documentName = String(row[1] || '').trim(); // Column 1: Document Reference
+        const discipline = String(row[2] || '').trim();   // Column 2: Discipline  
         
-        const rawStatus = String(row[headers.findIndex((h: any) => 
-          String(h || '').toLowerCase().includes('discipline')
-        )] || row[2] || '').trim();
+        // Search for status in columns that might contain CODE2, CODE3, CODE4, etc.
+        let rawStatus = '---';
+        for (let colIdx = 0; colIdx < row.length; colIdx++) {
+          const cellValue = String(row[colIdx] || '').trim();
+          if (cellValue === '2' || cellValue === '3' || cellValue === '4' || 
+              cellValue === 'CODE2' || cellValue === 'CODE3' || cellValue === 'CODE4' ||
+              cellValue.toLowerCase() === 'ur dar' || cellValue === 'URDAR') {
+            rawStatus = cellValue;
+            if (processedCount < 3) {
+              console.log(`🎯 Found status "${cellValue}" in column ${colIdx} for row ${i}`);
+            }
+            break;
+          }
+        }
         
-        const discipline = String(row[headers.findIndex((h: any) => 
-          String(h || '').toLowerCase().includes('status_approval')
-        )] || row[3] || '').trim();
+        // Debug column mapping for first few rows
+        if (processedCount < 3) {
+          console.log(`🔍 Column mapping row ${i}:`, {
+            col0: row[0],
+            col1_docName: row[1],
+            col2_discipline: row[2], 
+            col3_status: row[3],
+            col4: row[4],
+            col5: row[5]
+          });
+        }
         
         // Extract DOCTYPE from Excel - use index 4 based on EMCT structure
         const docType = String(row[4] || '').trim();
@@ -246,12 +270,17 @@ export class EmctExcelService {
         
         processedCount++;
         
-        // Debug: Log first few processed items
-        if (processedCount <= 3) {
+        // Debug: Log first few processed items with raw and mapped status
+        if (processedCount <= 5) {
           console.log(`📝 Sample EMCT document ${processedCount}:`, {
             name: documentName.substring(0, 50),
-            discipline: discipline,
-            status: mapStatus(rawStatus)
+            rawStatus: rawStatus,
+            mappedStatus: mapStatus(rawStatus),
+            statusColumnIndex: headers.findIndex((h: any) => 
+              String(h || '').toLowerCase().includes('status_approval') ||
+              String(h || '').toLowerCase().includes('current_status') ||
+              String(h || '').toLowerCase().includes('status')
+            )
           });
         }
       }
