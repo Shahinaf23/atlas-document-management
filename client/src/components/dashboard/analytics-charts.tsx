@@ -4,8 +4,11 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Color mapping for different statuses and categories
 const COLORS = {
   'Approved': '#10b981',
+  'Under review': '#f59e0b', // EMCT specific
   'Under Review': '#f59e0b',
   'Pending': '#ef4444',
+  'Reject with comments': '#f97316', // EMCT specific
+  'Rejected': '#dc2626', // EMCT specific
   'Submitted': '#3b82f6',
   '---': '#6b7280',
   'default': '#8b5cf6'
@@ -16,9 +19,10 @@ interface AnalyticsChartsProps {
   documents: any[];
   shopDrawings: any[];
   type: "documents" | "shop-drawings";
+  project?: string;
 }
 
-export function AnalyticsCharts({ data, documents, shopDrawings, type }: AnalyticsChartsProps) {
+export function AnalyticsCharts({ data, documents, shopDrawings, type, project = "jeddah" }: AnalyticsChartsProps) {
   // Status distribution data
   const statusCounts = data.reduce((acc: any, item: any) => {
     const status = item.currentStatus || '---';
@@ -32,11 +36,18 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type }: Analyti
     color: COLORS[status as keyof typeof COLORS] || COLORS.default
   }));
 
-  // Vendor/Sub-system distribution data
-  const vendorCounts = data.reduce((acc: any, item: any) => {
+  // Discipline distribution data (replacing vendor for EMCT documents)
+  const disciplineCounts = data.reduce((acc: any, item: any) => {
     if (type === "documents") {
-      const vendor = item.vendor || 'Unknown';
-      acc[vendor] = (acc[vendor] || 0) + 1;
+      if (project === 'emct') {
+        // For EMCT, use discipline instead of vendor
+        const discipline = item.discipline || 'General';
+        acc[discipline] = (acc[discipline] || 0) + 1;
+      } else {
+        // For Jeddah, keep vendor logic
+        const vendor = item.vendor || 'Unknown';
+        acc[vendor] = (acc[vendor] || 0) + 1;
+      }
     } else {
       // For shop drawings, use sub-systems
       const subSystem = item.subSystem || 'General';
@@ -45,19 +56,25 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type }: Analyti
     return acc;
   }, {});
 
-  const vendorData = Object.entries(vendorCounts)
-    .slice(0, 10) // Top 10 vendors/sub-systems
-    .map(([vendor, count]) => ({
-      name: vendor.length > 15 ? vendor.substring(0, 15) + '...' : vendor,
+  const vendorData = Object.entries(disciplineCounts)
+    .slice(0, 10) // Top 10 disciplines/vendors/sub-systems
+    .map(([name, count]) => ({
+      name: name.length > 15 ? name.substring(0, 15) + '...' : name,
       value: Number(count) || 0,
-      fullName: vendor
+      fullName: name
     }));
 
   // Document type distribution (for documents) or Systems distribution (for shop drawings)
   const typeCounts = data.reduce((acc: any, item: any) => {
     let itemType;
     if (type === "documents") {
-      itemType = item.documentType || 'General';
+      if (project === 'emct') {
+        // For EMCT, use discipline for type chart
+        itemType = item.discipline || 'General';
+      } else {
+        // For Jeddah, use documentType
+        itemType = item.documentType || 'General';
+      }
     } else {
       // For shop drawings, use system instead of drawing type
       itemType = item.system || 'General';
@@ -141,54 +158,64 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type }: Analyti
         </CardContent>
       </Card>
 
-      {/* Vendor/Sub-System Distribution Bar Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{type === "documents" ? "Top Vendors" : "Top Sub-Systems"}</CardTitle>
-          <CardDescription>
-            Distribution by {type === "documents" ? "vendor" : "sub-system"} (top 10)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={vendorData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  fontSize={12}
-                />
-                <YAxis />
-                <Tooltip 
-                  content={({ active, payload }: any) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-                          <p className="font-semibold">{data.fullName}</p>
-                          <p style={{ color: '#9333ea' }}>Count: {data.value}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="value" fill={type === "shop-drawings" ? "#06b6d4" : "#9333ea"} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Vendor/Sub-System Distribution Bar Chart - Hidden for EMCT documents */}
+      {!(project === 'emct' && type === "documents") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{type === "documents" ? "Top Vendors" : "Top Sub-Systems"}</CardTitle>
+            <CardDescription>
+              Distribution by {type === "documents" ? "vendor" : "sub-system"} (top 10)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={vendorData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={12}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    content={({ active, payload }: any) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
+                            <p className="font-semibold">{data.fullName}</p>
+                            <p style={{ color: '#9333ea' }}>Count: {data.value}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="value" fill={type === "shop-drawings" ? "#06b6d4" : "#9333ea"} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Type/Systems Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle>{type === "documents" ? "Document Types" : "Systems Distribution"}</CardTitle>
+          <CardTitle>
+            {type === "documents" 
+              ? (project === 'emct' ? "Discipline Types" : "Document Types")
+              : "Systems Distribution"
+            }
+          </CardTitle>
           <CardDescription>
-            Distribution by {type === "documents" ? "document type" : "system"}
+            Distribution by {type === "documents" 
+              ? (project === 'emct' ? "discipline" : "document type")
+              : "system"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>

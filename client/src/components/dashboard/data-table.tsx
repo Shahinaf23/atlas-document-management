@@ -11,11 +11,12 @@ interface DataTableProps {
   data: any[];
   type: "documents" | "shop-drawings";
   title: string;
+  project?: string;
 }
 
 type SortDirection = "asc" | "desc" | null;
 
-export function DataTable({ data, type, title }: DataTableProps) {
+export function DataTable({ data, type, title, project = "jeddah" }: DataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [vendorFilter, setVendorFilter] = useState("all");
@@ -312,7 +313,7 @@ export function DataTable({ data, type, title }: DataTableProps) {
             </SelectContent>
           </Select>
 
-          {type === "documents" && (
+          {type === "documents" && project !== 'emct' && (
             <Select value={vendorFilter} onValueChange={handleVendorFilterChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by vendor" />
@@ -387,16 +388,18 @@ export function DataTable({ data, type, title }: DataTableProps) {
                     {getSortIcon(type === "documents" ? "title" : "drawingNumber")}
                   </Button>
                 </th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  <Button 
-                    variant="ghost" 
-                    className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
-                    onClick={() => handleSort(type === "documents" ? "vendor" : "system")}
-                  >
-                    {type === "documents" ? "Vendor" : "System"}
-                    {getSortIcon(type === "documents" ? "vendor" : "system")}
-                  </Button>
-                </th>
+                {!(type === "documents" && project === 'emct') && (
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold hover:bg-transparent hover:text-blue-600 transition-colors"
+                      onClick={() => handleSort(type === "documents" ? "vendor" : "system")}
+                    >
+                      {type === "documents" ? "Vendor" : "System"}
+                      {getSortIcon(type === "documents" ? "vendor" : "system")}
+                    </Button>
+                  </th>
+                )}
                 {type === "documents" && (
                   <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                     <Button 
@@ -466,11 +469,13 @@ export function DataTable({ data, type, title }: DataTableProps) {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {type === "documents" ? item.vendor : item.system}
-                    </div>
-                  </td>
+                  {!(type === "documents" && project === 'emct') && (
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {type === "documents" ? item.vendor : item.system}
+                      </div>
+                    </td>
+                  )}
                   {type === "documents" && (
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-600 dark:text-gray-300">

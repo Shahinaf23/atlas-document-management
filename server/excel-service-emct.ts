@@ -62,51 +62,117 @@ export class EmctExcelService {
 
   private async loadDocumentSubmittals(): Promise<void> {
     try {
-      console.log('📄 Loading EMCT document submittals from Excel...');
+      console.log('📄 Loading EMCT document submittals from CURRENT STATUS worksheet...');
       const filePath = join(process.cwd(), 'attached_assets', 'Document Submittal Log-RAQ_1755061638473.xlsx');
       const buffer = await readFile(filePath);
       
       const workbook = xlsx.read(buffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
       
-      const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      // Find the CURRENT STATUS worksheet
+      let currentStatusSheet = null;
+      let sheetName = '';
+      
+      for (const name of workbook.SheetNames) {
+        if (name.toLowerCase().includes('current') && name.toLowerCase().includes('status')) {
+          currentStatusSheet = workbook.Sheets[name];
+          sheetName = name;
+          break;
+        }
+      }
+      
+      // Fallback to first sheet if CURRENT STATUS not found
+      if (!currentStatusSheet) {
+        sheetName = workbook.SheetNames[0];
+        currentStatusSheet = workbook.Sheets[sheetName];
+        console.log('⚠️ CURRENT STATUS worksheet not found, using first sheet:', sheetName);
+      } else {
+        console.log('✅ Found CURRENT STATUS worksheet:', sheetName);
+      }
+      
+      const rawData = xlsx.utils.sheet_to_json(currentStatusSheet, { header: 1 }) as any[][];
       console.log(`🔍 EMCT Document file has ${rawData.length} total rows`);
       
+      // Find header row by looking for key columns
+      let headerRowIndex = -1;
+      for (let i = 0; i < Math.min(rawData.length, 15); i++) {
+        const row = rawData[i];
+        if (row && Array.isArray(row)) {
+          const rowStr = row.join('|').toLowerCase();
+          if (rowStr.includes('status_approval') || rowStr.includes('sub_date') || 
+              (rowStr.includes('status') && rowStr.includes('document'))) {
+            headerRowIndex = i;
+            console.log('📋 Found header row at index:', i, row);
+            break;
+          }
+        }
+      }
+      
+      if (headerRowIndex === -1) {
+        console.log('⚠️ Header row not found, using row 0 as fallback');
+        headerRowIndex = 0;
+      }
+      
+      const headers = rawData[headerRowIndex] || [];
       const processedDocuments: any[] = [];
       let processedCount = 0;
       
-      // Based on analysis: Data starts at row 9, structure is:
-      // Row analysis shows: Col 2: Type, Col 4: Discipline, Col 8: Document Name, Col 10: Reference, etc.
-      for (let i = 9; i < rawData.length; i++) {
+      // Map status codes according to user requirements
+      const mapStatus = (rawStatus: string): string => {
+        const status = String(rawStatus || '').trim();
+        
+        // User-defined status mapping
+        if (status === '2') return 'Approved';
+        if (status === '3') return 'Reject with comments';
+        if (status === '4') return 'Rejected';
+        if (status.toLowerCase() === 'ur dar' || status.toLowerCase() === 'ur_dar') return 'Under review';
+        if (status === '---' || status === '' || status === 'undefined') return 'Pending';
+        
+        return status; // Keep original if no mapping found
+      };
+      
+      // Process data rows starting after header
+      for (let i = headerRowIndex + 1; i < rawData.length; i++) {
         const row = rawData[i];
         if (!row || !Array.isArray(row) || row.length === 0) continue;
         
-        console.log(`🔍 Processing EMCT doc row ${i}:`, row.slice(0, 12).map((cell, idx) => `${idx}:${cell}`));
+        // Extract data based on expected column structure
+        const documentName = String(row[headers.findIndex((h: any) => 
+          String(h || '').toLowerCase().includes('document') || 
+          String(h || '').toLowerCase().includes('name') || 
+          String(h || '').toLowerCase().includes('title')
+        )] || row[1] || '').trim();
         
-        const docType = String(row[2] || '').trim();
-        const discipline = String(row[4] || '').trim();
-        const docName = String(row[8] || '').trim();
-        const reference = String(row[10] || '').trim();
-        const category = String(row[6] || 'Project Submittal').trim();
+        const discipline = String(row[headers.findIndex((h: any) => 
+          String(h || '').toLowerCase().includes('discipline')
+        )] || row[2] || '').trim();
         
-        // Skip if no meaningful data
-        if (!docName || docName.length < 5) continue;
-        if (docType.toLowerCase().includes('document') || docName.toLowerCase().includes('revision')) continue;
+        const rawStatus = String(row[headers.findIndex((h: any) => 
+          String(h || '').toLowerCase().includes('status_approval')
+        )] || row[3] || '').trim();
         
-        // Determine status - look for status indicators in later columns
-        let status = 'PENDING';
-        for (let col = 12; col < Math.min(row.length, 25); col++) {
-          const cellValue = String(row[col] || '').trim().toLowerCase();
-          if (cellValue.includes('approved') || cellValue.includes('code1')) {
-            status = 'CODE1';
-            break;
-          } else if (cellValue.includes('under review') || cellValue.includes('ur')) {
-            status = 'UR';
-            break;
-          } else if (cellValue.includes('returned') || cellValue.includes('rtn')) {
-            status = 'RTN';
-            break;
+        const subDate = row[headers.findIndex((h: any) => 
+          String(h || '').toLowerCase().includes('sub_date')
+        )] || row[4] || null;
+        
+        // Skip if no meaningful document name
+        if (!documentName || documentName.length < 5) continue;
+        if (documentName.toLowerCase().includes('document') && documentName.length < 15) continue;
+        
+        // Parse submission date
+        let submissionDate = new Date();
+        if (subDate && subDate !== '---' && subDate !== '') {
+          try {
+            if (typeof subDate === 'number' && subDate > 40000) {
+              // Excel date serial number
+              submissionDate = new Date((subDate - 25569) * 86400 * 1000);
+            } else if (typeof subDate === 'string') {
+              submissionDate = new Date(subDate);
+            }
+            if (isNaN(submissionDate.getTime())) {
+              submissionDate = new Date();
+            }
+          } catch (e) {
+            submissionDate = new Date();
           }
         }
         
@@ -114,15 +180,15 @@ export class EmctExcelService {
           id: processedCount + 1,
           documentId: `EMCT-DOC-${processedCount + 1}`,
           serialNumber: processedCount + 1,
-          documentName: docName,
-          status: status,
-          category: category,
-          discipline: discipline,
-          documentType: docType,
-          reference: reference,
+          title: documentName,
+          discipline: discipline || 'General',
+          currentStatus: mapStatus(rawStatus),
+          category: 'Project Submittal',
+          documentType: discipline || 'General',
           project: 'EMCT Cargo-ZIA',
-          submissionDate: new Date().toISOString().split('T')[0],
-          lastUpdated: new Date().toISOString(),
+          submittedDate: submissionDate,
+          submittedAt: submissionDate,
+          lastUpdated: new Date(),
         });
         
         processedCount++;
@@ -130,10 +196,9 @@ export class EmctExcelService {
         // Debug: Log first few processed items
         if (processedCount <= 3) {
           console.log(`📝 Sample EMCT document ${processedCount}:`, {
-            type: docType,
+            name: documentName.substring(0, 50),
             discipline: discipline,
-            name: docName.substring(0, 50),
-            status: status
+            status: mapStatus(rawStatus)
           });
         }
       }

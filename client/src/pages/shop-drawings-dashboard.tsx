@@ -161,6 +161,7 @@ export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawin
             documents={[]} 
             shopDrawings={Array.isArray(shopDrawings) ? shopDrawings : []} 
             type="shop-drawings" 
+            project={project}
           />
         )}
       </div>
@@ -181,7 +182,8 @@ export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawin
               <DataTable 
                 data={Array.isArray(shopDrawings) ? shopDrawings : []} 
                 type="shop-drawings" 
-                title="" 
+                title=""
+                project={project}
               />
             </div>
           </CardContent>

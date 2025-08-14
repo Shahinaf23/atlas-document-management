@@ -161,6 +161,7 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
             documents={Array.isArray(documents) ? documents : []} 
             shopDrawings={[]} 
             type="documents" 
+            project={project}
           />
         )}
       </div>
@@ -181,7 +182,8 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
               <DataTable 
                 data={Array.isArray(documents) ? documents : []} 
                 type="documents" 
-                title="" 
+                title=""
+                project={project}
               />
             </div>
           </CardContent>
