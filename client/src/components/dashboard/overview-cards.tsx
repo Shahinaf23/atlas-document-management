@@ -7,9 +7,10 @@ interface OverviewCardsProps {
   documents: any[];
   shopDrawings: any[];
   type: "documents" | "shop-drawings";
+  project?: string;
 }
 
-export function OverviewCards({ documents, shopDrawings, type }: OverviewCardsProps) {
+export function OverviewCards({ documents, shopDrawings, type, project = "jeddah" }: OverviewCardsProps) {
   const data = type === "documents" ? documents : shopDrawings;
   
   // FORCE CONSOLE LOG TO APPEAR EVERY TIME
@@ -36,7 +37,7 @@ export function OverviewCards({ documents, shopDrawings, type }: OverviewCardsPr
   const code1 = data.filter(item => item.currentStatus === "CODE1").length;
   const code2 = data.filter(item => item.currentStatus === "CODE2" || item.currentStatus === "Approved").length;
   const code3 = data.filter(item => item.currentStatus === "CODE3" || item.currentStatus === "Reject with comments").length;
-  const code4 = data.filter(item => item.currentStatus === "Rejected").length;
+  const code4 = data.filter(item => item.currentStatus === "CODE4" || item.currentStatus === "Rejected").length;
   const underReviewFiltered = data.filter(item => {
     const status = item.currentStatus;
     // Include both legacy and new status formats
@@ -86,18 +87,33 @@ export function OverviewCards({ documents, shopDrawings, type }: OverviewCardsPr
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800 hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs sm:text-sm font-medium truncate">CODE1</CardTitle>
-          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-        </CardHeader>
-        <CardContent className="pb-3">
-          <div className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">{code1}</div>
-          <p className="text-xs text-muted-foreground truncate">
-            {total > 0 ? Math.round((code1 / total) * 100) : 0}% approved
-          </p>
-        </CardContent>
-      </Card>
+      {project === 'emct' && type === "documents" ? (
+        <Card className="bg-gradient-to-br from-gray-500/10 to-gray-600/5 border-gray-200 dark:border-gray-800 hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">CODE4</CardTitle>
+            <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+          </CardHeader>
+          <CardContent className="pb-3">
+            <div className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300">{code4}</div>
+            <p className="text-xs text-muted-foreground truncate">
+              {total > 0 ? Math.round((code4 / total) * 100) : 0}% rejected
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800 hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium truncate">CODE1</CardTitle>
+            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+          </CardHeader>
+          <CardContent className="pb-3">
+            <div className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">{code1}</div>
+            <p className="text-xs text-muted-foreground truncate">
+              {total > 0 ? Math.round((code1 / total) * 100) : 0}% approved
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-200 dark:border-yellow-800 hover:shadow-md transition-shadow">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -120,7 +136,7 @@ export function OverviewCards({ documents, shopDrawings, type }: OverviewCardsPr
         <CardContent className="pb-3">
           <div className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300">{code3}</div>
           <p className="text-xs text-muted-foreground truncate">
-            {total > 0 ? Math.round((code3 / total) * 100) : 0}% revise
+            {total > 0 ? Math.round((code3 / total) * 100) : 0}% {project === 'emct' && type === "documents" ? 'reject with comments' : 'revise'}
           </p>
         </CardContent>
       </Card>

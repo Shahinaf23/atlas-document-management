@@ -117,9 +117,30 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
       fullName: name
     }));
 
-  // Status distribution for third EMCT chart
+  // Status distribution for third EMCT chart with EMCT-specific labeling
   const statusCounts = data.reduce((acc: any, item: any) => {
-    const status = item.currentStatus || 'Pending';
+    let status = item.currentStatus || 'Pending';
+    
+    // For EMCT, map status codes to descriptive labels
+    if (project === 'emct' && type === "documents") {
+      switch(status) {
+        case 'CODE2':
+          status = 'Approved';
+          break;
+        case 'CODE3':
+          status = 'Reject with comments';
+          break;
+        case 'CODE4':
+          status = 'Rejected';
+          break;
+        case 'UR DAR':
+        case 'UR(DAR)':
+        case 'UR (DAR)':
+          status = 'Under review';
+          break;
+      }
+    }
+    
     acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {});
@@ -180,7 +201,6 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
 
   const typeDistributionData = Object.entries(typeDistributionCounts).map(([itemType, count], index) => {
     const color = COLORS[itemType as keyof typeof COLORS] || CHART_COLORS[index % CHART_COLORS.length];
-    console.log(`Document type: ${itemType}, Color: ${color}`);
     return {
       name: itemType,
       value: Number(count) || 0,

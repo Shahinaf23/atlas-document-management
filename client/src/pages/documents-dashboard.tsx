@@ -142,6 +142,7 @@ export default function DocumentsDashboard({ project = "jeddah" }: DocumentsDash
           documents={Array.isArray(documents) ? documents : []} 
           shopDrawings={[]} 
           type="documents" 
+          project={project}
         />
       )}
 

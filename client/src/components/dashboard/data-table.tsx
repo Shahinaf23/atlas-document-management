@@ -198,13 +198,19 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
       case "CODE2":
         return (
           <Badge className="bg-blue-400 text-white border-blue-500 hover:bg-blue-500 transition-colors font-bold px-3 py-1 shadow-sm">
-            Approved w/ Comments
+            {project === 'emct' ? 'Approved' : 'Approved w/ Comments'}
           </Badge>
         );
       case "CODE3":
         return (
           <Badge className="bg-orange-500 text-white border-orange-600 hover:bg-orange-600 transition-colors font-bold px-3 py-1 shadow-sm">
-            Revise & Resubmit
+            {project === 'emct' ? 'Reject with comments' : 'Revise & Resubmit'}
+          </Badge>
+        );
+      case "CODE4":
+        return (
+          <Badge className="bg-red-500 text-white border-red-600 hover:bg-red-600 transition-colors font-bold px-3 py-1 shadow-sm">
+            Rejected
           </Badge>
         );
       case "UR(ATJV)":
@@ -220,9 +226,10 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
           </Badge>
         );
       case "UR(DAR)":
+      case "UR DAR":
         return (
           <Badge className="bg-cyan-500 text-white border-cyan-600 hover:bg-cyan-600 transition-colors font-bold px-3 py-1 shadow-sm">
-            Under Review by DAR
+            {project === 'emct' ? 'Under review' : 'Under Review by DAR'}
           </Badge>
         );
       case "RTN(ATLS)":
