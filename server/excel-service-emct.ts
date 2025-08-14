@@ -132,12 +132,16 @@ export class EmctExcelService {
       const mapStatus = (rawStatus: string): string => {
         const status = String(rawStatus || '').trim();
         
-        // User-defined status mapping
+        // User-defined status mapping - updated per requirements
         if (status === '2') return 'CODE2';
         if (status === '3') return 'CODE3';
         if (status === '4') return 'CODE4';
         if (status.toLowerCase() === 'ur dar' || status.toLowerCase() === 'ur_dar') return 'Under review';
-        if (status === '---' || status === '' || status === 'undefined') return 'PENDING';
+        if (status === '---' || status === '' || status === 'undefined') return 'Pending';
+        
+        // Map legacy values to new naming convention
+        if (status.toLowerCase() === 'approved') return 'CODE2';
+        if (status.toLowerCase() === 'rejected') return 'CODE3';
         
         return status; // Keep original if no mapping found
       };
@@ -164,16 +168,16 @@ export class EmctExcelService {
           String(h || '').toLowerCase().includes('title')
         )] || row[1] || '').trim();
         
-        const discipline = String(row[headers.findIndex((h: any) => 
+        const rawStatus = String(row[headers.findIndex((h: any) => 
           String(h || '').toLowerCase().includes('discipline')
         )] || row[2] || '').trim();
         
-        // Map discipline names
-        const mappedDiscipline = discipline.toLowerCase() === 'general' ? 'CODE4' : discipline;
-        
-        const rawStatus = String(row[headers.findIndex((h: any) => 
+        const discipline = String(row[headers.findIndex((h: any) => 
           String(h || '').toLowerCase().includes('status_approval')
         )] || row[3] || '').trim();
+        
+        // Map discipline names  
+        const mappedDiscipline = discipline.toLowerCase() === 'general' ? 'CODE4' : discipline;
         
         const subDate = row[headers.findIndex((h: any) => 
           String(h || '').toLowerCase().includes('sub_date')

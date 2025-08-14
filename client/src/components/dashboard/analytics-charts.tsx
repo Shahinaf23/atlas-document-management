@@ -4,17 +4,17 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Color mapping for different statuses and categories
 const COLORS = {
   'Approved': '#10b981',
-  'CODE2': '#10b981', // EMCT specific
-  'CODE3': '#f97316', // EMCT specific  
+  'CODE2': '#10b981', // EMCT specific - renamed from APPROVED
+  'CODE3': '#f97316', // EMCT specific - renamed from REJECTED  
   'CODE4': '#3b82f6', // EMCT specific
   'Under review': '#f59e0b', // EMCT specific
   'Under Review': '#f59e0b',
-  'Pending': '#ef4444',
-  'PENDING': '#ef4444', // EMCT specific
+  'Pending': '#ef4444', // EMCT specific - renamed from ---
+  'PENDING': '#ef4444', // Legacy support
   'Reject with comments': '#f97316', // EMCT specific
-  'Rejected': '#dc2626', // EMCT specific
+  'Rejected': '#dc2626', // Legacy support
   'Submitted': '#3b82f6',
-  '---': '#6b7280',
+  '---': '#6b7280', // Legacy support
   'default': '#8b5cf6'
 };
 

@@ -79,14 +79,13 @@ export default function OverviewTab() {
   // Calculate real-time metrics from Excel data with proper status matching
   const totalDocuments = documents.length;
   
-  // Removed excessive debug logging for performance
-  
-  // Use the same logic as statusCounts for consistency
-  const code1Count = statusCounts['Code 1'] || 0;
-  const code2Count = statusCounts['Code 2'] || 0;
-  const code3Count = statusCounts['Code 3'] || 0;
+  // Support both Jeddah and EMCT status codes  
+  const code1Count = statusCounts['Code 1'] || statusCounts['CODE1'] || 0;
+  const code2Count = statusCounts['Code 2'] || statusCounts['CODE2'] || 0;
+  const code3Count = statusCounts['Code 3'] || statusCounts['CODE3'] || 0;
+  const code4Count = statusCounts['Code 4'] || statusCounts['CODE4'] || 0;
   const pendingCount = (statusCounts['---'] || 0) + (statusCounts['Pending'] || 0);
-  const underReviewCount = (statusCounts['UR (ATJV)'] || 0) + (statusCounts['AR (ATJV)'] || 0) + (statusCounts['UR (DAR)'] || 0);
+  const underReviewCount = (statusCounts['UR (ATJV)'] || 0) + (statusCounts['AR (ATJV)'] || 0) + (statusCounts['UR (DAR)'] || 0) + (statusCounts['Under review'] || 0);
   
   // Removed debug logging for performance
 
