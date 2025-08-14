@@ -27,21 +27,22 @@ export function OverviewCards({ documents, shopDrawings, type }: OverviewCardsPr
   const submitted = data.filter(item => {
     const status = item.currentStatus;
     return status === 'CODE1' || status === 'CODE2' || status === 'CODE3' || status === 'CODE4' ||
+           status === 'Approved' || status === 'Reject with comments' || status === 'Rejected' ||
            status === 'UR (ATJV)' || status === 'UR(ATJV)' || status === 'AR (ATJV)' || status === 'AR(ATJV)' || 
            status === 'UR (DAR)' || status === 'UR(DAR)' || status === 'RTN (ATLS)' || status === 'RTN(ATLS)' || 
            status === 'RTN (AS)' || status === 'RTN(AS)' || status === 'Under review';
   }).length;
   const pending = data.filter(item => item.currentStatus === '---' || item.currentStatus === 'Pending').length;
   const code1 = data.filter(item => item.currentStatus === "CODE1").length;
-  const code2 = data.filter(item => item.currentStatus === "CODE2").length;
-  const code3 = data.filter(item => item.currentStatus === "CODE3").length;
-  const code4 = data.filter(item => item.currentStatus === "CODE4").length;
+  const code2 = data.filter(item => item.currentStatus === "CODE2" || item.currentStatus === "Approved").length;
+  const code3 = data.filter(item => item.currentStatus === "CODE3" || item.currentStatus === "Reject with comments").length;
+  const code4 = data.filter(item => item.currentStatus === "CODE4" || item.currentStatus === "Rejected").length;
   const underReviewFiltered = data.filter(item => {
     const status = item.currentStatus;
     // Include both legacy and new status formats
     const isUnderReview = status === 'UR (ATJV)' || status === 'UR(ATJV)' || 
                          status === 'UR (DAR)' || status === 'UR(DAR)' ||
-                         status === 'Under review';
+                         status === 'Under review' || status === 'UR';
     return isUnderReview;
   });
   const underReview = underReviewFiltered.length;

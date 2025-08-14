@@ -128,20 +128,20 @@ export class EmctExcelService {
       const processedDocuments: any[] = [];
       let processedCount = 0;
       
-      // Map status codes according to user requirements
+      // Map status codes according to user requirements for EMCT
       const mapStatus = (rawStatus: string): string => {
         const status = String(rawStatus || '').trim();
         
-        // User-defined status mapping - updated per requirements
-        if (status === '2') return 'CODE2';
-        if (status === '3') return 'CODE3';
-        if (status === '4') return 'CODE4';
+        // EMCT-specific status mapping per user requirements
+        if (status === '2') return 'Approved';
+        if (status === '3') return 'Reject with comments';
+        if (status === '4') return 'Rejected';
         if (status.toLowerCase() === 'ur dar' || status.toLowerCase() === 'ur_dar') return 'Under review';
         if (status === '---' || status === '' || status === 'undefined') return 'Pending';
         
         // Map legacy values to new naming convention
-        if (status.toLowerCase() === 'approved') return 'CODE2';
-        if (status.toLowerCase() === 'rejected') return 'CODE3';
+        if (status.toLowerCase() === 'approved') return 'Approved';
+        if (status.toLowerCase() === 'rejected') return 'Rejected';
         
         return status; // Keep original if no mapping found
       };

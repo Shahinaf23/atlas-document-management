@@ -3,16 +3,16 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 
 // Color mapping for different statuses and categories
 const COLORS = {
-  'Approved': '#10b981',
-  'CODE2': '#10b981', // EMCT specific - renamed from APPROVED
-  'CODE3': '#f97316', // EMCT specific - renamed from REJECTED  
-  'CODE4': '#3b82f6', // EMCT specific
-  'Under review': '#f59e0b', // EMCT specific
-  'Under Review': '#f59e0b',
+  'Approved': '#10b981', // EMCT: 2->Approved
+  'Reject with comments': '#f97316', // EMCT: 3->Reject with comments
+  'Rejected': '#dc2626', // EMCT: 4->Rejected
+  'Under review': '#f59e0b', // EMCT: UR DAR->Under review
   'Pending': '#ef4444', // EMCT specific - renamed from ---
+  'CODE2': '#10b981', // Legacy support
+  'CODE3': '#f97316', // Legacy support  
+  'CODE4': '#3b82f6', // Legacy support
+  'Under Review': '#f59e0b', // Legacy support
   'PENDING': '#ef4444', // Legacy support
-  'Reject with comments': '#f97316', // EMCT specific
-  'Rejected': '#dc2626', // Legacy support
   'Submitted': '#3b82f6',
   '---': '#6b7280', // Legacy support
   'default': '#8b5cf6'
@@ -133,15 +133,15 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {/* Status Distribution Pie Chart */}
+      {/* First Chart - For EMCT: Discipline Types (Bar), For Others: Status Distribution (Pie) */}
       <Card>
         <CardHeader>
           <CardTitle>
-            {project === 'emct' && type === "documents" ? "Status Code Distribution" : "Status Distribution"}
+            {project === 'emct' && type === "documents" ? "Discipline Types" : "Status Distribution"}
           </CardTitle>
           <CardDescription>
             {project === 'emct' && type === "documents" 
-              ? "Status code breakdown for all documents"
+              ? "Current distribution by discipline"
               : `Current status breakdown for all ${type === "documents" ? "documents" : "shop drawings"}`
             }
           </CardDescription>
@@ -149,40 +149,92 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={CustomTooltip} />
-              </PieChart>
+              {project === 'emct' && type === "documents" ? (
+                <BarChart data={vendorData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={12}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    content={({ active, payload }: any) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
+                            <p className="font-semibold">{data.fullName}</p>
+                            <p style={{ color: '#9333ea' }}>Count: {data.value}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#8884d8" />
+                </BarChart>
+              ) : (
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={CustomTooltip} />
+                </PieChart>
+              )}
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Vendor/Sub-System Distribution Bar Chart - Hidden for EMCT documents */}
-      {!(project === 'emct' && type === "documents") && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{type === "documents" ? "Top Vendors" : "Top Sub-Systems"}</CardTitle>
-            <CardDescription>
-              Distribution by {type === "documents" ? "vendor" : "sub-system"} (top 10)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+      {/* Second Chart - For EMCT: Status Code Distribution (Pie), For Others: Top Vendors/Sub-Systems (Bar) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {project === 'emct' && type === "documents" ? "Status Code Distribution" : (type === "documents" ? "Top Vendors" : "Top Sub-Systems")}
+          </CardTitle>
+          <CardDescription>
+            {project === 'emct' && type === "documents" 
+              ? "Status code breakdown for all documents"
+              : `Distribution by ${type === "documents" ? "vendor" : "sub-system"} (top 10)`
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              {project === 'emct' && type === "documents" ? (
+                <PieChart>
+                  <Pie
+                    data={typeData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {typeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={CustomTooltip} />
+                </PieChart>
+              ) : (
                 <BarChart data={vendorData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
@@ -209,11 +261,11 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
                   />
                   <Bar dataKey="value" fill={type === "shop-drawings" ? "#06b6d4" : "#9333ea"} radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              )}
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Type/Systems Distribution */}
       <Card>
