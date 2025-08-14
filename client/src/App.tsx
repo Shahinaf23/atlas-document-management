@@ -64,6 +64,8 @@ function Router() {
       <Switch>
         <Route path="/" component={() => <Dashboard user={user} onLogout={handleLogout} />} />
         <Route path="/dashboard" component={() => <Dashboard user={user} onLogout={handleLogout} />} />
+        <Route path="/jeddah/:section?" component={() => <Dashboard user={user} onLogout={handleLogout} />} />
+        <Route path="/emct/:section?" component={() => <Dashboard user={user} onLogout={handleLogout} />} />
         <Route component={NotFound} />
       </Switch>
     </div>

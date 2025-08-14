@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut, ChevronDown } from "lucide-react";
+import { useLocation } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,19 +77,41 @@ const tabConfigs: Record<TabType, TabConfig> = {
 };
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
+  const [location] = useLocation();
+  
+  // Determine active tab based on URL
+  const getTabFromUrl = (path: string): TabType => {
+    if (path.startsWith('/emct/documents')) return "emct-documents";
+    if (path.startsWith('/emct/shop-drawings')) return "emct-shop-drawings";
+    if (path.startsWith('/emct/admin')) return "emct-admin";
+    if (path.startsWith('/emct')) return "emct-overview";
+    if (path.startsWith('/jeddah/documents')) return "jeddah-documents";
+    if (path.startsWith('/jeddah/shop-drawings')) return "jeddah-shop-drawings";
+    if (path.startsWith('/jeddah/admin')) return "jeddah-admin";
+    if (path.startsWith('/jeddah')) return "jeddah-overview";
+    
+    // Default fallback
     try {
-      // Restore active tab from localStorage, default to "jeddah-overview"
       const savedTab = localStorage.getItem('atlas_active_tab');
       return (savedTab as TabType) || "jeddah-overview";
     } catch (error) {
       console.error('Error reading localStorage:', error);
       return "jeddah-overview";
     }
-  });
+  };
+
+  const [activeTab, setActiveTab] = useState<TabType>(() => getTabFromUrl(location));
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const urlTab = getTabFromUrl(location);
+    if (urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [location]);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {

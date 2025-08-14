@@ -1,6 +1,7 @@
 import { FileText, FileImage, BarChart3, Building, Upload, ChevronLeft, ChevronRight, FolderOpen, Folder, ChevronDown } from "lucide-react";
 import type { User } from "@shared/schema";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 interface SidebarProps {
   user: User;
@@ -50,6 +51,7 @@ const projectFolders: ProjectFolder[] = [
 
 export default function Sidebar({ user, activeTab, onTabChange, onClose, isCollapsed = false, onToggleCollapse }: SidebarProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['jeddah', 'emct'])); // Both folders expanded by default
+  const [, setLocation] = useLocation();
 
   const toggleFolder = (folderId: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -140,10 +142,23 @@ export default function Sidebar({ user, activeTab, onTabChange, onClose, isColla
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
                     
+                    const getUrlForTab = (tabId: string): string => {
+                      if (tabId.startsWith('emct-')) {
+                        const section = tabId.replace('emct-', '');
+                        return section === 'overview' ? '/emct' : `/emct/${section}`;
+                      } else if (tabId.startsWith('jeddah-')) {
+                        const section = tabId.replace('jeddah-', '');
+                        return section === 'overview' ? '/jeddah' : `/jeddah/${section}`;
+                      }
+                      return '/';
+                    };
+
                     return (
                       <button
                         key={item.id}
                         onClick={() => {
+                          const url = getUrlForTab(item.id);
+                          setLocation(url);
                           onTabChange(item.id);
                           onClose(); // Close mobile sidebar
                         }}
