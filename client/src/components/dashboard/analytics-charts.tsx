@@ -27,12 +27,20 @@ interface AnalyticsChartsProps {
 }
 
 export function AnalyticsCharts({ data, documents, shopDrawings, type, project = "jeddah" }: AnalyticsChartsProps) {
-  // For EMCT documents, we swap the data - first chart shows disciplines, second shows status
+  // For EMCT documents, we show DOCTYPE chart instead of discipline chart
   const isEMCTDocs = project === 'emct' && type === "documents";
   
-  // Status distribution data (or discipline data for EMCT first chart)
+  // First chart data - For EMCT: DOCTYPE, For others: Status distribution
   const firstChartCounts = data.reduce((acc: any, item: any) => {
-    const key = isEMCTDocs ? (item.discipline || 'CODE4') : (item.currentStatus || '---');
+    let key;
+    if (isEMCTDocs) {
+      // For EMCT, use documentType as DOCTYPE since docType extraction failed
+      key = item.documentType || 'Unknown';
+      // Filter out CODE4 as requested
+      if (key === 'CODE4') key = 'General';
+    } else {
+      key = item.currentStatus || '---';
+    }
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
@@ -133,15 +141,15 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {/* First Chart - For EMCT: Discipline Types (Bar), For Others: Status Distribution (Pie) */}
+      {/* First Chart - For EMCT: Document Types (Bar), For Others: Status Distribution (Pie) */}
       <Card>
         <CardHeader>
           <CardTitle>
-            {project === 'emct' && type === "documents" ? "Discipline Types" : "Status Distribution"}
+            {project === 'emct' && type === "documents" ? "Document Types" : "Status Distribution"}
           </CardTitle>
           <CardDescription>
             {project === 'emct' && type === "documents" 
-              ? "Current distribution by discipline"
+              ? "Distribution by document type (DOCTYPE)"
               : `Current status breakdown for all ${type === "documents" ? "documents" : "shop drawings"}`
             }
           </CardDescription>

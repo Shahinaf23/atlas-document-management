@@ -125,6 +125,7 @@ export class EmctExcelService {
       }
       
       const headers = rawData[headerRowIndex] || [];
+      console.log('🏷️ EMCT Document headers available:', headers.map((h: any, idx: number) => `${idx}:${h}`));
       const processedDocuments: any[] = [];
       let processedCount = 0;
       
@@ -176,8 +177,14 @@ export class EmctExcelService {
           String(h || '').toLowerCase().includes('status_approval')
         )] || row[3] || '').trim();
         
-        // Map discipline names  
-        const mappedDiscipline = discipline.toLowerCase() === 'general' ? 'CODE4' : discipline;
+        // Extract DOCTYPE from Excel - use index 4 based on EMCT structure
+        const docType = String(row[4] || '').trim();
+        
+        // Filter out CODE4 and map discipline names
+        let mappedDiscipline = discipline;
+        if (discipline.toLowerCase() === 'general' || discipline === 'CODE4') {
+          mappedDiscipline = 'General';
+        }
         
         const subDate = row[headers.findIndex((h: any) => 
           String(h || '').toLowerCase().includes('sub_date')
@@ -226,10 +233,11 @@ export class EmctExcelService {
           documentId: `EMCT-DOC-${processedCount + 1}`,
           serialNumber: processedCount + 1,
           title: documentName,
-          discipline: mappedDiscipline || 'CODE4',
+          discipline: mappedDiscipline || 'General',
           currentStatus: mapStatus(rawStatus),
           category: 'Project Submittal',
-          documentType: mappedDiscipline || 'CODE4',
+          documentType: docType || mappedDiscipline || 'General',
+          docType: docType || 'Unknown',
           project: 'EMCT Cargo-ZIA',
           submittedDate: submissionDate,
           submittedAt: submissionDate,

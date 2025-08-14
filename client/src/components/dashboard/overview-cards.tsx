@@ -36,7 +36,7 @@ export function OverviewCards({ documents, shopDrawings, type }: OverviewCardsPr
   const code1 = data.filter(item => item.currentStatus === "CODE1").length;
   const code2 = data.filter(item => item.currentStatus === "CODE2" || item.currentStatus === "Approved").length;
   const code3 = data.filter(item => item.currentStatus === "CODE3" || item.currentStatus === "Reject with comments").length;
-  const code4 = data.filter(item => item.currentStatus === "CODE4" || item.currentStatus === "Rejected").length;
+  const code4 = data.filter(item => item.currentStatus === "Rejected").length;
   const underReviewFiltered = data.filter(item => {
     const status = item.currentStatus;
     // Include both legacy and new status formats
