@@ -179,50 +179,7 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
     return null;
   };
 
-  const getStatusBadge = (status: string, index: number = 0) => {
-    // For EMCT project, redistribute status to show CODE2, CODE3, CODE4
-    if (project === 'emct') {
-      if (isPendingStatus(status) || status === "---") {
-        return (
-          <Badge className="bg-slate-200 text-slate-800 border-slate-300 hover:bg-slate-300 transition-colors font-bold px-3 py-1 shadow-sm">
-            Pending
-          </Badge>
-        );
-      }
-      
-      // For document references, redistribute to show different status codes
-      if (status.includes('DS-') || status.includes('MS-') || status.includes('PQ-')) {
-        const redistributedStatus = index % 4;
-        switch(redistributedStatus) {
-          case 0:
-            return (
-              <Badge className="bg-green-500 text-white border-green-600 hover:bg-green-600 transition-colors font-bold px-3 py-1 shadow-sm">
-                CODE2 - Approved
-              </Badge>
-            );
-          case 1:
-            return (
-              <Badge className="bg-orange-500 text-white border-orange-600 hover:bg-orange-600 transition-colors font-bold px-3 py-1 shadow-sm">
-                CODE3 - Reject with comments
-              </Badge>
-            );
-          case 2:
-            return (
-              <Badge className="bg-red-500 text-white border-red-600 hover:bg-red-600 transition-colors font-bold px-3 py-1 shadow-sm">
-                CODE4 - Rejected
-              </Badge>
-            );
-          default:
-            return (
-              <Badge className="bg-purple-500 text-white border-purple-600 hover:bg-purple-600 transition-colors font-bold px-3 py-1 shadow-sm">
-                URDAR - Under review
-              </Badge>
-            );
-        }
-      }
-    }
-    
-    // Original status logic for non-EMCT or fallback
+  const getStatusBadge = (status: string) => {
     if (isPendingStatus(status) || status === "---") {
       return (
         <Badge className="bg-slate-200 text-slate-800 border-slate-300 hover:bg-slate-300 transition-colors font-bold px-3 py-1 shadow-sm">
@@ -240,20 +197,20 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
         );
       case "CODE2":
         return (
-          <Badge className="bg-green-500 text-white border-green-600 hover:bg-green-600 transition-colors font-bold px-3 py-1 shadow-sm">
-            {project === 'emct' ? 'CODE2 - Approved' : 'Approved w/ Comments'}
+          <Badge className="bg-blue-400 text-white border-blue-500 hover:bg-blue-500 transition-colors font-bold px-3 py-1 shadow-sm">
+            {project === 'emct' ? 'Approved' : 'Approved w/ Comments'}
           </Badge>
         );
       case "CODE3":
         return (
           <Badge className="bg-orange-500 text-white border-orange-600 hover:bg-orange-600 transition-colors font-bold px-3 py-1 shadow-sm">
-            {project === 'emct' ? 'CODE3 - Reject with comments' : 'Revise & Resubmit'}
+            {project === 'emct' ? 'Reject with comments' : 'Revise & Resubmit'}
           </Badge>
         );
       case "CODE4":
         return (
           <Badge className="bg-red-500 text-white border-red-600 hover:bg-red-600 transition-colors font-bold px-3 py-1 shadow-sm">
-            {project === 'emct' ? 'CODE4 - Rejected' : 'Rejected'}
+            Rejected
           </Badge>
         );
       case "UR(ATJV)":
@@ -534,7 +491,7 @@ export function DataTable({ data, type, title, project = "jeddah" }: DataTablePr
                     </td>
                   )}
                   <td className="px-6 py-4">
-                    {getStatusBadge(item.currentStatus, index)}
+                    {getStatusBadge(item.currentStatus)}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col space-y-1">

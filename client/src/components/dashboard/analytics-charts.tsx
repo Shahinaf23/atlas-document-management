@@ -122,26 +122,8 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
   const statusCounts = data.reduce((acc: any, item: any) => {
     let status = item.currentStatus || 'Pending';
     
-    // For EMCT, create the status distribution you requested
+    // For EMCT, map status codes to descriptive labels
     if (project === 'emct' && type === "documents") {
-      // Map existing data to show CODE2, CODE3, CODE4 distribution
-      if (status === '---' || status === 'Pending') {
-        status = 'Pending';
-      } else if (status.includes('DS-') || status.includes('MS-') || status.includes('PQ-')) {
-        // Distribute document references across different status codes as requested
-        const docIndex = data.indexOf(item);
-        if (docIndex % 4 === 0) {
-          status = 'CODE2'; // Approved
-        } else if (docIndex % 4 === 1) {
-          status = 'CODE3'; // Reject with comments  
-        } else if (docIndex % 4 === 2) {
-          status = 'CODE4'; // Rejected
-        } else {
-          status = 'URDAR'; // Under review
-        }
-      }
-      
-      // Convert codes to display labels for the chart
       switch(status) {
         case 'CODE2':
           status = 'Approved';
@@ -152,14 +134,13 @@ export function AnalyticsCharts({ data, documents, shopDrawings, type, project =
         case 'CODE4':
           status = 'Rejected';
           break;
-        case 'URDAR':
         case 'UR DAR':
         case 'UR(DAR)':
         case 'UR (DAR)':
           status = 'Under review';
           break;
         default:
-          // Keep as Pending for all '---' values
+          // Keep original status for other values
           break;
       }
     }

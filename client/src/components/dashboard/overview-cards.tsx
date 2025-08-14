@@ -25,45 +25,19 @@ export function OverviewCards({ documents, shopDrawings, type, project = "jeddah
   });
   
   const total = data.length;
-  
-  // For EMCT project, redistribute status counts to show CODE2, CODE3, CODE4 as requested
-  let code2Count = 0, code3Count = 0, code4Count = 0, pendingCount = 0;
-  
-  if (project === 'emct') {
-    // Count pending (---)
-    pendingCount = data.filter(item => item.currentStatus === '---' || item.currentStatus === 'Pending').length;
-    
-    // For non-pending items, distribute across CODE2, CODE3, CODE4
-    const nonPendingItems = data.filter(item => 
-      item.currentStatus !== '---' && 
-      item.currentStatus !== 'Pending' && 
-      item.currentStatus !== ''
-    );
-    
-    // Distribute to show CODE3 and CODE4 as you requested
-    code2Count = Math.floor(nonPendingItems.length * 0.3); // 30% approved
-    code3Count = Math.floor(nonPendingItems.length * 0.25); // 25% reject with comments
-    code4Count = Math.floor(nonPendingItems.length * 0.15); // 15% rejected
-    const remainingCount = nonPendingItems.length - code2Count - code3Count - code4Count;
-    
-    // Ensure we account for all items
-    if (remainingCount > 0) {
-      code2Count += remainingCount;
-    }
-  } else {
-    // Use original logic for other projects
-    pendingCount = data.filter(item => item.currentStatus === '---' || item.currentStatus === 'Pending').length;
-    code2Count = data.filter(item => item.currentStatus === "CODE2" || item.currentStatus === "Approved").length;
-    code3Count = data.filter(item => item.currentStatus === "CODE3" || item.currentStatus === "Reject with comments").length;
-    code4Count = data.filter(item => item.currentStatus === "CODE4" || item.currentStatus === "Rejected").length;
-  }
-  
-  const submitted = code2Count + code3Count + code4Count;
-  const pending = pendingCount;
-  const code1 = 0; // No CODE1 for EMCT as requested
-  const code2 = code2Count;
-  const code3 = code3Count;
-  const code4 = code4Count;
+  const submitted = data.filter(item => {
+    const status = item.currentStatus;
+    return status === 'CODE1' || status === 'CODE2' || status === 'CODE3' || status === 'CODE4' ||
+           status === 'Approved' || status === 'Reject with comments' || status === 'Rejected' ||
+           status === 'UR (ATJV)' || status === 'UR(ATJV)' || status === 'AR (ATJV)' || status === 'AR(ATJV)' || 
+           status === 'UR (DAR)' || status === 'UR(DAR)' || status === 'RTN (ATLS)' || status === 'RTN(ATLS)' || 
+           status === 'RTN (AS)' || status === 'RTN(AS)' || status === 'Under review';
+  }).length;
+  const pending = data.filter(item => item.currentStatus === '---' || item.currentStatus === 'Pending').length;
+  const code1 = data.filter(item => item.currentStatus === "CODE1").length;
+  const code2 = data.filter(item => item.currentStatus === "CODE2" || item.currentStatus === "Approved").length;
+  const code3 = data.filter(item => item.currentStatus === "CODE3" || item.currentStatus === "Reject with comments").length;
+  const code4 = data.filter(item => item.currentStatus === "CODE4" || item.currentStatus === "Rejected").length;
   const underReviewFiltered = data.filter(item => {
     const status = item.currentStatus;
     // Include both legacy and new status formats
