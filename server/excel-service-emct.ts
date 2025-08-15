@@ -424,21 +424,24 @@ export class EmctExcelService {
       const processedShopDrawings: any[] = [];
       let processedCount = 0;
       
-      // Based on analysis: Data starts at row 9, exact structure:
-      // Col 2: Building, Col 12: System, Col 16: Drawing Description, etc.
+      // Based on debug analysis: Data starts at row 9, exact structure:
+      // Col 1: Building, Col 11: System, Col 12: Sub System, Col 13: Drawing Number, Col 15: Description, Col 26: Status
       for (let i = 9; i < rawData.length; i++) {
         const row = rawData[i];
         if (!row || !Array.isArray(row) || row.length === 0) continue;
         
-        const building = String(row[2] || '').trim();
-        const program = String(row[3] || '').trim();
-        const contract = String(row[4] || '').trim();
-        const discipline = String(row[5] || '').trim();
-        const system = String(row[12] || '').trim();
-        const subSystem = String(row[13] || '').trim();
-        let drawingName = String(row[16] || '').trim();
+        const building = String(row[1] || '').trim(); // Col 1: EMCT-BUILDING 1399
+        const program = String(row[2] || '').trim(); // Col 2: MTC
+        const contract = String(row[3] || '').trim(); // Col 3: 23A25
+        const discipline = String(row[4] || '').trim(); // Col 4: Y100
+        const system = String(row[11] || '').trim(); // Col 11: Security System
+        const subSystem = String(row[12] || '').trim(); // Col 12: CCTV
+        const drawingNumber = String(row[13] || '').trim(); // Col 13: ADA-AUH0620022-1399-T100-DR-L0-P-1200-RB
+        let drawingName = String(row[15] || '').trim(); // Col 15: SECURITY SYSTEM (CCTV) LAYOUTS...
         
-        console.log(`🔍 Processing EMCT shop row ${i}: building="${building}", system="${system}", drawing="${drawingName.substring(0, 30)}"`);
+        const currentStatus = String(row[26] || '').trim(); // Col 26: UNDER REVIEW
+        
+        console.log(`🔍 Processing EMCT shop row ${i}: building="${building}", system="${system}", drawing="${drawingName.substring(0, 30)}", status="${currentStatus}"`);
         
         // Skip if no meaningful data
         if (!building || building.length < 3) {
@@ -453,16 +456,21 @@ export class EmctExcelService {
           console.log(`⏭️ Skipping row ${i}: drawing name too short: "${drawingName}"`);
           continue;
         }
+        if (!drawingNumber || drawingNumber.length < 5) {
+          console.log(`⏭️ Skipping row ${i}: drawing number too short: "${drawingNumber}"`);
+          continue;
+        }
         
-        // Look for status in column 26 based on logs analysis
-        let drawingStatus = 'UR'; // Default to UR as seen in logs
-        const statusCell = String(row[26] || '').trim().toLowerCase();
-        if (statusCell.includes('approved') || statusCell.includes('code1')) {
-          drawingStatus = 'CODE1';
-        } else if (statusCell.includes('returned') || statusCell.includes('rtn')) {
-          drawingStatus = 'RTN';
-        } else if (statusCell.includes('pending')) {
-          drawingStatus = 'PENDING';
+        // Map status values to match chart requirements
+        let mappedStatus = currentStatus || 'UR';
+        if (currentStatus.toLowerCase().includes('under review') || currentStatus.toLowerCase().includes('ur')) {
+          mappedStatus = 'UR';
+        } else if (currentStatus.toLowerCase().includes('approved')) {
+          mappedStatus = 'CODE1';
+        } else if (currentStatus.toLowerCase().includes('returned') || currentStatus.toLowerCase().includes('rtn')) {
+          mappedStatus = 'RTN';
+        } else if (currentStatus.toLowerCase().includes('pending') || currentStatus === '---' || currentStatus === '') {
+          mappedStatus = 'Pending';
         }
         
         // Ensure we have a valid drawing name
@@ -474,15 +482,21 @@ export class EmctExcelService {
           id: processedCount + 1,
           drawingId: `EMCT-SD-${processedCount + 1}`,
           serialNumber: processedCount + 1,
+          drawingNumber: drawingNumber,
           drawingName: drawingName,
-          status: drawingStatus,
+          title: drawingName,
+          currentStatus: mappedStatus,
+          status: mappedStatus,
           system: system || discipline || 'General',
+          subSystem: subSystem || 'General',
           building: building,
           program: program,
           contract: contract,
           discipline: discipline,
           project: 'EMCT Cargo-ZIA',
           submissionDate: new Date().toISOString().split('T')[0],
+          submittedDate: new Date(),
+          submittedAt: new Date(),
           lastUpdated: new Date().toISOString(),
         });
         
@@ -493,8 +507,10 @@ export class EmctExcelService {
           console.log(`🏗️ Sample EMCT shop drawing ${processedCount}:`, {
             building: building,
             system: system || discipline,
+            drawingNumber: drawingNumber.substring(0, 30),
             name: drawingName.substring(0, 50),
-            status: drawingStatus
+            currentStatus: currentStatus,
+            mappedStatus: mappedStatus
           });
         }
       }
