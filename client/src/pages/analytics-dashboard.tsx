@@ -111,31 +111,71 @@ export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDash
   // Combined analytics data with correct status logic
   const totalItems = documents.length + shopDrawings.length;
   
-  // Status counts based on project type - EMCT uses different status codes
-  const getStatusField = (item: any) => project === 'emct' ? item.status : item.currentStatus;
+  // EMCT-specific calculations for Analytics Overview  
+  if (project === 'emct') {
+    // EMCT Cargo-ZIA specific counts
+    const docPending = documents.filter((d: any) => d.currentStatus === 'Pending').length; // Should be 63
+    const shopPending = shopDrawings.filter((sd: any) => sd.currentStatus === 'Pending').length; // Should be 92
+    const totalPending = docPending + shopPending; // Should be 155
+    
+    // EMCT Submitted = CODE2 + CODE3 + CODE4 + Under review (UR DAR) from both documents and shop drawings
+    const docSubmitted = documents.filter((d: any) => {
+      const status = d.currentStatus;
+      return status === 'CODE2' || status === 'CODE3' || status === 'CODE4' || status === 'Under review';
+    }).length;
+    const shopSubmitted = shopDrawings.filter((sd: any) => {
+      const status = sd.currentStatus;
+      return status === 'CODE2' || status === 'CODE3' || status === 'CODE4' || status === 'UR';
+    }).length;
+    const totalSubmitted = docSubmitted + shopSubmitted; // Should be 335
+    
+    console.log('🎯 EMCT ANALYTICS OVERVIEW CALCULATIONS:', {
+      docPending, shopPending, totalPending,
+      docSubmitted, shopSubmitted, totalSubmitted,
+      expectedPending: 155,
+      expectedSubmitted: 335
+    });
+  }
+
+  // Status counts based on project type
+  const getStatusField = (item: any) => project === 'emct' ? item.currentStatus : item.currentStatus;
   
   const code1Count = documents.filter((d: any) => getStatusField(d) === 'CODE1').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE1').length;
   const code2Count = documents.filter((d: any) => getStatusField(d) === 'CODE2').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE2').length;
   const code3Count = documents.filter((d: any) => getStatusField(d) === 'CODE3').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE3').length;
+  const code4Count = documents.filter((d: any) => getStatusField(d) === 'CODE4').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'CODE4').length;
   const urAtjvCount = documents.filter((d: any) => getStatusField(d) === 'UR (ATJV)' || getStatusField(d) === 'UR').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'UR (ATJV)' || getStatusField(sd) === 'UR').length;
   const arAtjvCount = documents.filter((d: any) => getStatusField(d) === 'AR (ATJV)' || getStatusField(d) === 'AR').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'AR (ATJV)' || getStatusField(sd) === 'AR').length;
-  const urDarCount = documents.filter((d: any) => getStatusField(d) === 'UR (DAR)').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'UR (DAR)').length;
+  const urDarCount = documents.filter((d: any) => getStatusField(d) === 'UR (DAR)' || getStatusField(d) === 'Under review').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'UR (DAR)').length;
   const rtnAtlsCount = documents.filter((d: any) => getStatusField(d) === 'RTN (ATLS)' || getStatusField(d) === 'RTN').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'RTN (ATLS)' || getStatusField(sd) === 'RTN').length;
   const rtnAsCount = documents.filter((d: any) => getStatusField(d) === 'RTN (AS)').length + shopDrawings.filter((sd: any) => getStatusField(sd) === 'RTN (AS)').length;
-  const pendingCount = documents.filter((d: any) => getStatusField(d) === 'Pending' || getStatusField(d) === 'PENDING').length;
   
-  // Shop drawings status counts (using same logic as documents)
-  const submittedShopDrawings = shopDrawings.filter((sd: any) => {
-    const status = sd.currentStatus;
-    return status === 'CODE1' || status === 'CODE2' || status === 'CODE3' || 
-           status === 'UR (ATJV)' || status === 'AR (ATJV)' || status === 'UR (DAR)' || status === 'RTN (ATLS)' || status === 'RTN (AS)';
-  }).length;
+  // Calculate correct totals for EMCT vs other projects
+  let totalSubmitted, totalPending;
   
-  const pendingShopDrawings = shopDrawings.filter((sd: any) => sd.currentStatus === 'Pending').length;
-  
-  // Calculate totals - all status codes except Pending are submitted (counts already include both documents and shop drawings)
-  const totalSubmitted = code1Count + code2Count + code3Count + urAtjvCount + arAtjvCount + urDarCount + rtnAtlsCount + rtnAsCount;
-  const totalPending = pendingCount + pendingShopDrawings;
+  if (project === 'emct') {
+    // EMCT specific calculation: submitted = CODE2 + CODE3 + CODE4 + UR DAR
+    const docSubmitted = documents.filter((d: any) => {
+      const status = d.currentStatus;
+      return status === 'CODE2' || status === 'CODE3' || status === 'CODE4' || status === 'Under review';
+    }).length;
+    const shopSubmitted = shopDrawings.filter((sd: any) => {
+      const status = sd.currentStatus;
+      return status === 'CODE2' || status === 'CODE3' || status === 'CODE4' || status === 'UR';
+    }).length;
+    totalSubmitted = docSubmitted + shopSubmitted;
+    
+    // EMCT pending calculation
+    const docPending = documents.filter((d: any) => d.currentStatus === 'Pending').length;
+    const shopPending = shopDrawings.filter((sd: any) => sd.currentStatus === 'Pending').length;
+    totalPending = docPending + shopPending;
+  } else {
+    // Non-EMCT calculation (original logic)
+    totalSubmitted = code1Count + code2Count + code3Count + urAtjvCount + arAtjvCount + urDarCount + rtnAtlsCount + rtnAsCount;
+    const pendingCount = documents.filter((d: any) => getStatusField(d) === 'Pending' || getStatusField(d) === 'PENDING').length;
+    const pendingShopDrawings = shopDrawings.filter((sd: any) => sd.currentStatus === 'Pending').length;
+    totalPending = pendingCount + pendingShopDrawings;
+  }
   
   // Under Review counts (specifically UR statuses) - FIXED LOGIC
   const underReviewDocuments = documents.filter((d: any) => {
