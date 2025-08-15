@@ -128,17 +128,15 @@ export class EmctExcelService {
       const headers = rawData[headerRowIndex] || [];
       console.log('🏷️ EMCT Document headers available:', headers.map((h: any, idx: number) => `${idx}:${h}`));
       
-      // Find S_DATE column index with detailed logging
+      // Find Sub_date column index with detailed logging
       const subDateColumnIndex = headers.findIndex((h: any) => {
         const headerStr = String(h || '').toLowerCase().trim();
-        return headerStr === 's_date' || headerStr === 's date' || 
-               headerStr.includes('s_date') || headerStr.includes('s date') ||
-               headerStr === 'sub_date' || headerStr.includes('sub_date') || 
+        return headerStr === 'sub_date' || headerStr.includes('sub_date') || 
                headerStr.includes('submission') || headerStr.includes('submit') ||
-               headerStr.includes('date');
+               headerStr.includes('date') || headerStr === 'sub date';
       });
       
-      console.log('🗓️ S_DATE column detection:', {
+      console.log('🗓️ Sub_date column detection:', {
         found: subDateColumnIndex >= 0,
         index: subDateColumnIndex,
         headerName: subDateColumnIndex >= 0 ? headers[subDateColumnIndex] : 'Not found',
@@ -170,11 +168,16 @@ export class EmctExcelService {
         // Track raw status values
         statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
         
-        // EMCT-specific status mapping per user requirements - Enhanced detection
-        if (status === '1' || statusUpper === 'CODE1' || statusUpper === 'CODE 1' || statusUpper.includes('APPROVED') || statusUpper === 'APPROVED') return 'CODE1';
-        if (status === '2' || statusUpper === 'CODE2' || statusUpper === 'CODE 2') return 'CODE2';
-        if (status === '3' || statusUpper === 'CODE3' || statusUpper === 'CODE 3' || statusUpper.includes('REJECT') || statusUpper.includes('COMMENT') || statusUpper.includes('RTN')) return 'CODE3';
-        if (status === '4' || statusUpper === 'CODE4' || statusUpper === 'CODE 4' || statusUpper === 'REJECTED' || statusUpper === 'REJECT') return 'CODE4';
+        // EMCT-specific status mapping per user requirements - Enhanced CODE4 detection
+        if (status === '1' || statusUpper === 'CODE1') return 'CODE1';
+        if (status === '2' || statusUpper === 'CODE2' || statusUpper === 'APPROVED') return 'CODE2';
+        if (status === '3' || statusUpper === 'CODE3' || statusUpper.includes('REJECT') || statusUpper.includes('COMMENT') || statusUpper.includes('RTN')) return 'CODE3';
+        
+        // Enhanced CODE4 detection - check for various forms
+        if (status === '4' || statusUpper === 'CODE4' || 
+            statusUpper === 'REJECTED' || statusUpper === 'REJECT' ||
+            statusUpper.includes('4') || statusUpper.includes('REJECTED') ||
+            statusUpper.includes('CLOSED') || statusUpper.includes('FAIL')) return 'CODE4';
         
         // Alternative mappings
         if (statusUpper.includes('UR') && (statusUpper.includes('DAR') || statusUpper === 'UR')) return 'Under review';
@@ -217,12 +220,12 @@ export class EmctExcelService {
           mappedDiscipline = 'General';
         }
         
-        // Use the pre-detected S_DATE column index
+        // Use the pre-detected Sub_date column index
         const subDate = subDateColumnIndex >= 0 ? row[subDateColumnIndex] : null;
         
         // Debug submission date extraction for first few rows
         if (processedCount < 5) {
-          console.log(`🗓️ Row ${i} S_DATE extraction:`, {
+          console.log(`🗓️ Row ${i} Sub_date extraction:`, {
             subDateColumnIndex,
             headerAtIndex: subDateColumnIndex >= 0 ? headers[subDateColumnIndex] : 'N/A',
             rawSubDate: subDate,
