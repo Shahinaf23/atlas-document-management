@@ -465,11 +465,11 @@ export class EmctExcelService {
         const statusLower = currentStatus.toLowerCase();
         
         if (statusLower.includes('code 2') || statusLower.includes('code2') || currentStatus === '2') {
-          mappedStatus = 'Code 2';
+          mappedStatus = 'CODE2';
         } else if (statusLower.includes('code 3') || statusLower.includes('code3') || currentStatus === '3') {
-          mappedStatus = 'Code 3';
+          mappedStatus = 'CODE3';
         } else if (statusLower.includes('code 4') || statusLower.includes('code4') || currentStatus === '4') {
-          mappedStatus = 'Code 4';
+          mappedStatus = 'CODE4';
         } else if (statusLower.includes('under review') || statusLower.includes('ur dar') || statusLower.includes('ur(dar)') || statusLower === 'ur') {
           mappedStatus = 'UR';
         } else if (statusLower.includes('approved') || statusLower.includes('code 1') || statusLower.includes('code1') || currentStatus === '1') {
