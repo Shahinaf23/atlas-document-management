@@ -142,6 +142,7 @@ export default function ShopDrawingsDashboard({ project = "jeddah" }: ShopDrawin
           documents={[]} 
           shopDrawings={Array.isArray(shopDrawings) ? shopDrawings : []} 
           type="shop-drawings" 
+          project={project}
         />
       )}
 
