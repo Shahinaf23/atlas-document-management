@@ -87,7 +87,7 @@ export function OverviewCards({ documents, shopDrawings, type, project = "jeddah
         </CardContent>
       </Card>
 
-      {project === 'emct' && (type === "documents" || type === "shop-drawings") ? (
+      {project === 'emct' && type === "shop-drawings" ? (
         <Card className="bg-gradient-to-br from-gray-500/10 to-gray-600/5 border-gray-200 dark:border-gray-800 hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium truncate">CODE4</CardTitle>
