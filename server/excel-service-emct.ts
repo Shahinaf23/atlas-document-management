@@ -418,6 +418,72 @@ export class EmctExcelService {
       const buffer = await readFile(filePath);
       
       const workbook = xlsx.read(buffer, { type: 'buffer' });
+      
+      console.log('📋 Available worksheets in Shop Drawing Log:', workbook.SheetNames);
+      
+      // Find the ATLAS AD-LOG worksheet for S_DATE extraction
+      let atlasAdLogSheet = null;
+      let atlasAdLogData = null;
+      let sDateColumnIndex = -1;
+      let submissionDateMap = new Map<string, Date>();
+      
+      for (const name of workbook.SheetNames) {
+        if (name.toLowerCase().includes('atlas') || name.toLowerCase().includes('ad-log') || 
+            name.toLowerCase().includes('log') || name.toLowerCase().includes('date')) {
+          atlasAdLogSheet = workbook.Sheets[name];
+          atlasAdLogData = xlsx.utils.sheet_to_json(atlasAdLogSheet, { header: 1 }) as any[][];
+          console.log('✅ Found ATLAS AD-LOG worksheet:', name);
+          console.log('🔍 ATLAS AD-LOG first 5 rows:', atlasAdLogData.slice(0, 5));
+          
+          // Find S_DATE column
+          if (atlasAdLogData && atlasAdLogData.length > 0) {
+            for (let headerRowIndex = 0; headerRowIndex < Math.min(atlasAdLogData.length, 10); headerRowIndex++) {
+              const headerRow = atlasAdLogData[headerRowIndex];
+              if (headerRow && Array.isArray(headerRow)) {
+                sDateColumnIndex = headerRow.findIndex((header: any) => {
+                  const headerStr = String(header || '').toLowerCase().trim();
+                  return headerStr === 's_date' || headerStr.includes('s_date') || 
+                         headerStr === 's date' || headerStr.includes('submission date');
+                });
+                if (sDateColumnIndex >= 0) {
+                  console.log('✅ Found S_DATE column at index:', sDateColumnIndex, 'Header:', headerRow[sDateColumnIndex]);
+                  
+                  // Extract submission dates and map them by drawing number/identifier
+                  for (let dataRowIndex = headerRowIndex + 1; dataRowIndex < atlasAdLogData.length; dataRowIndex++) {
+                    const dataRow = atlasAdLogData[dataRowIndex];
+                    if (dataRow && Array.isArray(dataRow)) {
+                      const drawingRef = String(dataRow[0] || dataRow[1] || '').trim(); // Drawing reference
+                      const sDateValue = dataRow[sDateColumnIndex];
+                      
+                      if (drawingRef && sDateValue) {
+                        try {
+                          let submissionDate = new Date();
+                          if (typeof sDateValue === 'number' && sDateValue > 40000) {
+                            // Excel date serial number
+                            submissionDate = new Date((sDateValue - 25569) * 86400 * 1000);
+                          } else if (typeof sDateValue === 'string') {
+                            submissionDate = new Date(sDateValue);
+                          }
+                          if (!isNaN(submissionDate.getTime())) {
+                            submissionDateMap.set(drawingRef, submissionDate);
+                          }
+                        } catch (e) {
+                          // Skip invalid dates
+                        }
+                      }
+                    }
+                  }
+                  console.log(`📅 Extracted ${submissionDateMap.size} submission dates from ATLAS AD-LOG`);
+                  break;
+                }
+              }
+            }
+          }
+          break;
+        }
+      }
+      
+      // Use first sheet for main data
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       
@@ -488,6 +554,21 @@ export class EmctExcelService {
           drawingName = `${building} - ${system || discipline} Drawing`;
         }
         
+        // Extract submission date from ATLAS AD-LOG S_DATE column
+        let submissionDate = new Date();
+        let submissionDateStr = submissionDate.toISOString().split('T')[0];
+        
+        // Try to find submission date from ATLAS AD-LOG using drawing number or name as key
+        const possibleKeys = [drawingNumber, drawingName, building, `${processedCount + 1}`];
+        for (const key of possibleKeys) {
+          if (key && submissionDateMap.has(key)) {
+            submissionDate = submissionDateMap.get(key)!;
+            submissionDateStr = submissionDate.toISOString().split('T')[0];
+            console.log(`📅 Found S_DATE for drawing ${drawingNumber}: ${submissionDateStr}`);
+            break;
+          }
+        }
+        
         processedShopDrawings.push({
           id: processedCount + 1,
           drawingId: `EMCT-SD-${processedCount + 1}`,
@@ -504,9 +585,9 @@ export class EmctExcelService {
           contract: contract,
           discipline: discipline,
           project: 'EMCT Cargo-ZIA',
-          submissionDate: new Date().toISOString().split('T')[0],
-          submittedDate: new Date(),
-          submittedAt: new Date(),
+          submissionDate: submissionDateStr,
+          submittedDate: submissionDate,
+          submittedAt: submissionDate,
           lastUpdated: new Date().toISOString(),
         });
         
