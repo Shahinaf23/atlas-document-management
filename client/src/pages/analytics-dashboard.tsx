@@ -177,16 +177,26 @@ export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDash
     totalPending = pendingCount + pendingShopDrawings;
   }
   
-  // Under Review counts (specifically UR statuses) - FIXED LOGIC
-  const underReviewDocuments = documents.filter((d: any) => {
-    const status = d.currentStatus;
-    return status === 'UR (ATJV)' || status === 'UR (DAR)';
-  }).length;
-  const underReviewShopDrawings = shopDrawings.filter((sd: any) => {
-    const status = sd.currentStatus;
-    return status === 'UR (ATJV)' || status === 'UR (DAR)';
-  }).length;
-  const totalUnderReview = underReviewDocuments + underReviewShopDrawings;
+  // Under Review counts - EMCT-specific logic
+  let totalUnderReview, underReviewDocuments, underReviewShopDrawings;
+  
+  if (project === 'emct') {
+    // EMCT specific Under Review calculation
+    underReviewDocuments = documents.filter((d: any) => d.currentStatus === 'Under review').length; // Should be 28
+    underReviewShopDrawings = shopDrawings.filter((sd: any) => sd.currentStatus === 'UR').length; // Should be 249  
+    totalUnderReview = underReviewDocuments + underReviewShopDrawings; // Should be 277
+  } else {
+    // Non-EMCT logic (original)
+    underReviewDocuments = documents.filter((d: any) => {
+      const status = d.currentStatus;
+      return status === 'UR (ATJV)' || status === 'UR (DAR)';
+    }).length;
+    underReviewShopDrawings = shopDrawings.filter((sd: any) => {
+      const status = sd.currentStatus;
+      return status === 'UR (ATJV)' || status === 'UR (DAR)';
+    }).length;
+    totalUnderReview = underReviewDocuments + underReviewShopDrawings;
+  }
   
   console.log('UNDER REVIEW ANALYTICS DEBUG:', {
     underReviewDocuments,
@@ -202,72 +212,116 @@ export default function AnalyticsDashboard({ project = "jeddah" }: AnalyticsDash
   const shopDrawingSuccess = shopDrawings.length > 0 ? 
     (shopDrawings.filter((sd: any) => sd.currentStatus === "CODE1" || sd.currentStatus === "CODE2").length / shopDrawings.length) * 100 : 0;
 
-  // Status distribution data - showing all document status codes cleanly
-  const statusDistributionData = [
-    {
-      name: 'CODE1',
-      fullName: 'CODE1 - Approved',
-      count: code1Count,
-      color: '#10b981', // green
-      percentage: totalItems > 0 ? Math.round((code1Count / totalItems) * 100) : 0
-    },
-    {
-      name: 'CODE2', 
-      fullName: 'CODE2 - Approved with Comments',
-      count: code2Count,
-      color: '#3b82f6', // blue
-      percentage: totalItems > 0 ? Math.round((code2Count / totalItems) * 100) : 0
-    },
-    {
-      name: 'CODE3',
-      fullName: 'CODE3 - Revise and Resubmit', 
-      count: code3Count,
-      color: '#f59e0b', // amber
-      percentage: totalItems > 0 ? Math.round((code3Count / totalItems) * 100) : 0
-    },
-    {
-      name: 'UR (ATJV)',
-      fullName: 'UR (ATJV) - Under Review by ATJV',
-      count: urAtjvCount,
-      color: '#8b5cf6', // purple
-      percentage: totalItems > 0 ? Math.round((urAtjvCount / totalItems) * 100) : 0
-    },
-    {
-      name: 'AR (ATJV)',
-      fullName: 'AR (ATJV) - Approved Review by ATJV',
-      count: arAtjvCount,
-      color: '#06b6d4', // cyan
-      percentage: totalItems > 0 ? Math.round((arAtjvCount / totalItems) * 100) : 0
-    },
-    {
-      name: 'UR (DAR)',
-      fullName: 'UR (DAR) - Under Review by DAR',
-      count: urDarCount,
-      color: '#ec4899', // pink
-      percentage: totalItems > 0 ? Math.round((urDarCount / totalItems) * 100) : 0
-    },
-    {
-      name: 'RTN(ATLS)',
-      fullName: 'RTN(ATLS) - Return to ATLS',
-      count: rtnAtlsCount,
-      color: '#f97316', // orange
-      percentage: totalItems > 0 ? Math.round((rtnAtlsCount / totalItems) * 100) : 0
-    },
-    {
-      name: 'RTN(AS)',
-      fullName: 'RTN(AS) - Return to AS',
-      count: rtnAsCount,
-      color: '#84cc16', // lime
-      percentage: totalItems > 0 ? Math.round((rtnAsCount / totalItems) * 100) : 0
-    },
-    {
-      name: 'Pending',
-      fullName: 'Pending - Not Yet Submitted',
-      count: totalPending,
-      color: '#6b7280', // gray
-      percentage: totalItems > 0 ? Math.round((totalPending / totalItems) * 100) : 0
-    }
-  ].filter(item => item.count > 0); // Only show statuses that have documents
+  // Status distribution data - EMCT vs non-EMCT logic
+  let statusDistributionData;
+  
+  if (project === 'emct') {
+    // EMCT specific status distribution - includes CODE4 and UR/Under review
+    statusDistributionData = [
+      {
+        name: 'CODE2', 
+        fullName: 'CODE2 - Approved with Comments',
+        count: code2Count,
+        color: '#3b82f6', // blue
+        percentage: totalItems > 0 ? Math.round((code2Count / totalItems) * 100) : 0
+      },
+      {
+        name: 'CODE3',
+        fullName: 'CODE3 - Revise and Resubmit', 
+        count: code3Count,
+        color: '#f59e0b', // amber
+        percentage: totalItems > 0 ? Math.round((code3Count / totalItems) * 100) : 0
+      },
+      {
+        name: 'CODE4',
+        fullName: 'CODE4 - Rejected',
+        count: code4Count,
+        color: '#ef4444', // red
+        percentage: totalItems > 0 ? Math.round((code4Count / totalItems) * 100) : 0
+      },
+      {
+        name: 'Under Review',
+        fullName: 'Under Review',
+        count: totalUnderReview,
+        color: '#8b5cf6', // purple
+        percentage: totalItems > 0 ? Math.round((totalUnderReview / totalItems) * 100) : 0
+      },
+      {
+        name: 'Pending',
+        fullName: 'Pending - Not Yet Submitted',
+        count: totalPending,
+        color: '#6b7280', // gray
+        percentage: totalItems > 0 ? Math.round((totalPending / totalItems) * 100) : 0
+      }
+    ].filter(item => item.count > 0); // Only show statuses that have documents
+  } else {
+    // Non-EMCT status distribution (original logic)
+    statusDistributionData = [
+      {
+        name: 'CODE1',
+        fullName: 'CODE1 - Approved',
+        count: code1Count,
+        color: '#10b981', // green
+        percentage: totalItems > 0 ? Math.round((code1Count / totalItems) * 100) : 0
+      },
+      {
+        name: 'CODE2', 
+        fullName: 'CODE2 - Approved with Comments',
+        count: code2Count,
+        color: '#3b82f6', // blue
+        percentage: totalItems > 0 ? Math.round((code2Count / totalItems) * 100) : 0
+      },
+      {
+        name: 'CODE3',
+        fullName: 'CODE3 - Revise and Resubmit', 
+        count: code3Count,
+        color: '#f59e0b', // amber
+        percentage: totalItems > 0 ? Math.round((code3Count / totalItems) * 100) : 0
+      },
+      {
+        name: 'UR (ATJV)',
+        fullName: 'UR (ATJV) - Under Review by ATJV',
+        count: urAtjvCount,
+        color: '#8b5cf6', // purple
+        percentage: totalItems > 0 ? Math.round((urAtjvCount / totalItems) * 100) : 0
+      },
+      {
+        name: 'AR (ATJV)',
+        fullName: 'AR (ATJV) - Approved Review by ATJV',
+        count: arAtjvCount,
+        color: '#06b6d4', // cyan
+        percentage: totalItems > 0 ? Math.round((arAtjvCount / totalItems) * 100) : 0
+      },
+      {
+        name: 'UR (DAR)',
+        fullName: 'UR (DAR) - Under Review by DAR',
+        count: urDarCount,
+        color: '#ec4899', // pink
+        percentage: totalItems > 0 ? Math.round((urDarCount / totalItems) * 100) : 0
+      },
+      {
+        name: 'RTN(ATLS)',
+        fullName: 'RTN(ATLS) - Return to ATLS',
+        count: rtnAtlsCount,
+        color: '#f97316', // orange
+        percentage: totalItems > 0 ? Math.round((rtnAtlsCount / totalItems) * 100) : 0
+      },
+      {
+        name: 'RTN(AS)',
+        fullName: 'RTN(AS) - Return to AS',
+        count: rtnAsCount,
+        color: '#84cc16', // lime
+        percentage: totalItems > 0 ? Math.round((rtnAsCount / totalItems) * 100) : 0
+      },
+      {
+        name: 'Pending',
+        fullName: 'Pending - Not Yet Submitted',
+        count: totalPending,
+        color: '#6b7280', // gray
+        percentage: totalItems > 0 ? Math.round((totalPending / totalItems) * 100) : 0
+      }
+    ].filter(item => item.count > 0); // Only show statuses that have documents
+  }
 
   // Real submission trends - calculated from actual Excel submission dates
   // Shows submission patterns from real Excel data:
