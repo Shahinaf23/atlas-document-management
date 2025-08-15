@@ -428,56 +428,64 @@ export class EmctExcelService {
       let submissionDateMap = new Map<string, Date>();
       
       for (const name of workbook.SheetNames) {
-        if (name.toLowerCase().includes('atlas') || name.toLowerCase().includes('ad-log') || 
-            name.toLowerCase().includes('log') || name.toLowerCase().includes('date')) {
+        if (name === 'ATLAS AD-LOG') {
           atlasAdLogSheet = workbook.Sheets[name];
           atlasAdLogData = xlsx.utils.sheet_to_json(atlasAdLogSheet, { header: 1 }) as any[][];
           console.log('✅ Found ATLAS AD-LOG worksheet:', name);
           console.log('🔍 ATLAS AD-LOG first 5 rows:', atlasAdLogData.slice(0, 5));
           
-          // Find S_DATE column
+          // S_DATE column is at index 21 based on debug output
+          sDateColumnIndex = 21;
+          console.log('✅ Using S_DATE column at index:', sDateColumnIndex);
+          
+          // Extract submission dates from ATLAS AD-LOG
           if (atlasAdLogData && atlasAdLogData.length > 0) {
-            for (let headerRowIndex = 0; headerRowIndex < Math.min(atlasAdLogData.length, 10); headerRowIndex++) {
-              const headerRow = atlasAdLogData[headerRowIndex];
-              if (headerRow && Array.isArray(headerRow)) {
-                sDateColumnIndex = headerRow.findIndex((header: any) => {
-                  const headerStr = String(header || '').toLowerCase().trim();
-                  return headerStr === 's_date' || headerStr.includes('s_date') || 
-                         headerStr === 's date' || headerStr.includes('submission date');
-                });
-                if (sDateColumnIndex >= 0) {
-                  console.log('✅ Found S_DATE column at index:', sDateColumnIndex, 'Header:', headerRow[sDateColumnIndex]);
-                  
-                  // Extract submission dates and map them by drawing number/identifier
-                  for (let dataRowIndex = headerRowIndex + 1; dataRowIndex < atlasAdLogData.length; dataRowIndex++) {
-                    const dataRow = atlasAdLogData[dataRowIndex];
-                    if (dataRow && Array.isArray(dataRow)) {
-                      const drawingRef = String(dataRow[0] || dataRow[1] || '').trim(); // Drawing reference
-                      const sDateValue = dataRow[sDateColumnIndex];
-                      
-                      if (drawingRef && sDateValue) {
-                        try {
-                          let submissionDate = new Date();
-                          if (typeof sDateValue === 'number' && sDateValue > 40000) {
-                            // Excel date serial number
-                            submissionDate = new Date((sDateValue - 25569) * 86400 * 1000);
-                          } else if (typeof sDateValue === 'string') {
-                            submissionDate = new Date(sDateValue);
-                          }
-                          if (!isNaN(submissionDate.getTime())) {
-                            submissionDateMap.set(drawingRef, submissionDate);
-                          }
-                        } catch (e) {
-                          // Skip invalid dates
+            // Skip header rows and extract data
+            for (let dataRowIndex = 5; dataRowIndex < atlasAdLogData.length; dataRowIndex++) {
+              const dataRow = atlasAdLogData[dataRowIndex];
+              if (dataRow && Array.isArray(dataRow) && dataRow.length > sDateColumnIndex) {
+                // Get drawing reference from early columns (0, 1, 2, etc.)
+                const possibleRefs = [
+                  String(dataRow[0] || '').trim(),
+                  String(dataRow[1] || '').trim(), 
+                  String(dataRow[2] || '').trim(),
+                  String(dataRow[3] || '').trim()
+                ];
+                
+                const sDateValue = dataRow[sDateColumnIndex];
+                
+                if (sDateValue) {
+                  try {
+                    let submissionDate = new Date();
+                    if (typeof sDateValue === 'number' && sDateValue > 40000) {
+                      // Excel date serial number
+                      submissionDate = new Date((sDateValue - 25569) * 86400 * 1000);
+                    } else if (typeof sDateValue === 'string') {
+                      submissionDate = new Date(sDateValue);
+                    } else if (sDateValue instanceof Date) {
+                      submissionDate = sDateValue;
+                    }
+                    
+                    if (!isNaN(submissionDate.getTime())) {
+                      // Map the submission date to all possible references
+                      possibleRefs.forEach(ref => {
+                        if (ref && ref.length > 2) {
+                          submissionDateMap.set(ref, submissionDate);
+                          submissionDateMap.set(ref.toLowerCase(), submissionDate);
                         }
+                      });
+                      
+                      if (dataRowIndex < 10) {
+                        console.log(`📅 S_DATE row ${dataRowIndex}: refs=[${possibleRefs.join(', ')}], date=${submissionDate.toISOString().split('T')[0]}`);
                       }
                     }
+                  } catch (e) {
+                    // Skip invalid dates
                   }
-                  console.log(`📅 Extracted ${submissionDateMap.size} submission dates from ATLAS AD-LOG`);
-                  break;
                 }
               }
             }
+            console.log(`📅 Extracted ${submissionDateMap.size} submission dates from ATLAS AD-LOG`);
           }
           break;
         }

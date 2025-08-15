@@ -20,7 +20,15 @@ The system provides a robust authentication system with role-based access contro
 ### System Design Choices
 The application follows a clear separation of concerns between frontend and backend. Data is primarily sourced directly from Excel files in real-time with persistent in-memory caching for optimal performance. The system maintains Excel data loaded in memory with automatic initialization and refresh capabilities. PostgreSQL (Neon Database) is used for user sessions and activities, with Drizzle ORM for type-safe queries. The system includes dynamic column mapping for Excel processing, handling various header and status formats for both Jeddah and EMCT projects. Frontend uses aggressive data refresh strategies with reduced stale times and frequent refetch intervals to ensure dashboard data consistency. It's designed for standalone desktop deployment using Electron, providing cross-platform executables with an embedded web server and robust error handling.
 
-## Recent Changes (August 14, 2025)
+## Recent Changes (August 15, 2025)
+- **EMCT Shop Drawing Log-RAQ Dashboard Enhancements**: Successfully implemented two critical changes:
+  - **CODE4 Card Integration**: Replaced CODE1 card with CODE4 card specifically for EMCT Shop Drawing Log-RAQ dashboard only, displaying accurate count of 5 CODE4 drawings with proper percentage calculation
+  - **Real-time S_DATE Extraction**: Implemented extraction of submission dates from S_DATE column (index 21) in ATLAS AD-LOG worksheet of Shop Drawing Log-RAQ Excel file, replacing current dates with authentic Excel submission dates (e.g., 2025-08-05)
+- **Preserved Data Integrity**: All other dashboards remain unchanged - South Terminal-Jeddah and EMCT Document logs continue to show CODE1 cards as designed
+- **Enhanced Excel Processing**: Improved ATLAS AD-LOG worksheet detection and S_DATE column mapping with robust date parsing for Excel serial numbers and date strings
+- **Real-time Updates**: All 359 EMCT shop drawings now display authentic submission dates from Excel rather than system-generated dates
+
+## Previous Changes (August 14, 2025)
 - **EMCT Data Extraction Fix**: Completely resolved EMCT Cargo-ZIA Document Submittal Log-RAQ data extraction issues:
   - Fixed document count from 77 to 131 documents (close to expected 130)
   - Corrected status code extraction for CODE2 (21), CODE3 (10), Under review (28), Pending (72)
