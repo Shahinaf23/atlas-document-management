@@ -1,25 +1,11 @@
 {
   "version": 2,
-  "name": "atlas-document-management",
   "builds": [
     {
       "src": "server/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": [
-          "server/**",
-          "shared/**",
-          "dist/**",
-          "uploads/**",
-          "excel-data/**"
-        ]
-      }
-    },
-    {
-      "src": "client/**",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
+        "maxLambdaSize": "50mb"
       }
     }
   ],
@@ -30,7 +16,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/$1"
+      "dest": "/client/dist/$1"
     }
   ],
   "functions": {
@@ -40,5 +26,6 @@
   },
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "buildCommand": "npm run build"
 }
