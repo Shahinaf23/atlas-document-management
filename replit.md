@@ -43,6 +43,10 @@ The application follows a clear separation of concerns between frontend and back
   - Added Oracle Cloud Always Free setup guide with guaranteed permanent hosting
   - Included self-hosting guide for complete control and zero monthly costs
   - Oracle Cloud provides 2 VM instances and Oracle Database free forever with legal guarantee
+  - Created no-credit-card hosting alternatives after Oracle Cloud required payment verification
+  - Added Glitch.com deployment configuration as primary recommendation for credit-card-free hosting
+  - Glitch supports Node.js apps, file uploads, databases, and GitHub integration without payment details
+  - Included glitch.json configuration and comprehensive deployment guide
 
 ## Previous Changes (August 15, 2025)
 - **EMCT Shop Drawing Log-RAQ Dashboard Enhancements**: Successfully implemented two critical changes:

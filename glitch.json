@@ -1,0 +1,16 @@
+{
+  "install": "npm install",
+  "start": "npm start",
+  "watch": {
+    "ignore": ["node_modules/**", "dist/**", "client/dist/**", ".git/**"],
+    "install": {
+      "include": ["package.json", "package-lock.json"]
+    },
+    "restart": {
+      "include": ["server/**", "shared/**"]
+    }
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
