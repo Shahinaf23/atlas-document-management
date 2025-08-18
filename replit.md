@@ -47,6 +47,10 @@ The application follows a clear separation of concerns between frontend and back
   - Added Glitch.com deployment configuration as primary recommendation for credit-card-free hosting
   - Glitch supports Node.js apps, file uploads, databases, and GitHub integration without payment details
   - Included glitch.json configuration and comprehensive deployment guide
+  - Created local server specifications and production deployment documentation
+  - Defined system requirements from minimum (4GB RAM, dual-core) to enterprise (32GB RAM, 8+ cores)
+  - Detailed network, storage, and security specifications for on-premises deployment
+  - Included complete production setup guide with database, SSL, and process management
 
 ## Previous Changes (August 15, 2025)
 - **EMCT Shop Drawing Log-RAQ Dashboard Enhancements**: Successfully implemented two critical changes:
