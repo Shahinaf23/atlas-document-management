@@ -1,23 +1,18 @@
 services:
   - type: web
-    name: atlas-document-management
-    runtime: node
-    plan: free
-    buildCommand: npm install --include=dev && npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+    name: atlas-document-app
+    env: node
+    buildCommand: npm run build
     startCommand: npm start
-    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: DATABASE_URL
         fromDatabase:
-          name: atlas-postgres
+          name: atlas-database
           property: connectionString
 
 databases:
-  - name: atlas-postgres
+  - name: atlas-database
     databaseName: atlas_db
     user: atlas_user
-    plan: free

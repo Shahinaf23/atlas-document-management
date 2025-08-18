@@ -32,11 +32,13 @@ The application follows a clear separation of concerns between frontend and back
   - Fixed vercel.json configuration multiple times
   - Addressed "vite: command not found" and package resolution errors
   - Concluded Vercel unsuitable for full-stack app with Excel processing
-- **Platform Migration Decision**: Moved from Vercel to Railway for better full-stack application support
-  - Railway provides built-in PostgreSQL database
+- **Platform Migration Decision**: Moved from Vercel to Railway for better full-stack application support, then explored multiple free alternatives
+  - Railway provides built-in PostgreSQL database but has $5 credit limit
   - Handles file uploads and Excel processing perfectly
   - No serverless limitations for complex backend operations
-  - $5 free credits for initial deployment
+  - Created comprehensive free hosting alternatives guide with Render, Fly.io, Cyclic.sh options
+  - Added render.yaml and Render deployment configuration for completely free hosting
+  - Render recommended as best free alternative with permanent free PostgreSQL database
 
 ## Previous Changes (August 15, 2025)
 - **EMCT Shop Drawing Log-RAQ Dashboard Enhancements**: Successfully implemented two critical changes:
