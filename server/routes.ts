@@ -35,9 +35,13 @@ const emctUpload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Health check endpoint for Render (moved to /health)
+  // Health check endpoints for Railway and other platforms
   app.get("/health", (req, res) => {
     res.json({ status: "ok", message: "Atlas Document Management System is running" });
+  });
+  
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", message: "Atlas API is healthy" });
   });
   
   // Authentication routes
