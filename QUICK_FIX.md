@@ -8,14 +8,14 @@ I've updated your `vercel.json` to fix the build:
 
 ```json
 {
-  "buildCommand": "vite build",
+  "buildCommand": "npx vite build",
   "outputDirectory": "client/dist", 
   "installCommand": "npm install"
 }
 ```
 
 This tells Vercel:
-- Use `vite build` (builds only the React frontend)
+- Use `npx vite build` (builds only the React frontend)
 - Look for files in `client/dist/` (where Vite puts them)
 - Skip the backend build
 
