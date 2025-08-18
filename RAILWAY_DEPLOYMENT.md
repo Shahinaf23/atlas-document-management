@@ -23,6 +23,8 @@ Railway handles full-stack Node.js applications with databases perfectly - exact
 3. **Railway automatically detects it's a Node.js app**
 4. **Click "Deploy"**
 
+**Note:** Railway will use Nixpacks to build your Node.js app automatically. The Dockerfile has been removed to prevent Python dependency conflicts.
+
 ### Step 3: Add Database
 1. **In your Railway project dashboard**
 2. **Click "New" → "Database" → "Add PostgreSQL"**

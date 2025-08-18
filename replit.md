@@ -22,10 +22,12 @@ The application follows a clear separation of concerns between frontend and back
 
 ## Recent Changes (August 18, 2025)
 - **Railway Deployment Setup**: Created complete Railway deployment configuration after Vercel build failures
-  - Added railway.json with health check configuration
+  - Added railway.json with health check configuration and NODE_ENV environment
   - Created comprehensive RAILWAY_DEPLOYMENT.md guide
   - Added /api/health endpoint for Railway health checks
   - Configured for Nixpacks build system with npm start command
+  - Removed Dockerfile to prevent Python dependency conflicts
+  - Added .railwayignore to exclude unnecessary files from deployment
 - **Vercel Deployment Issues Resolved**: Attempted multiple fixes for Vercel deployment including vite command issues and build directory problems
   - Fixed vercel.json configuration multiple times
   - Addressed "vite: command not found" and package resolution errors

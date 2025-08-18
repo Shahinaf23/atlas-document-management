@@ -6,5 +6,8 @@
   "deploy": {
     "startCommand": "npm start",
     "healthcheckPath": "/api/health"
+  },
+  "environments": {
+    "NODE_ENV": "production"
   }
 }
