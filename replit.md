@@ -39,6 +39,10 @@ The application follows a clear separation of concerns between frontend and back
   - Created comprehensive free hosting alternatives guide with Render, Fly.io, Cyclic.sh options
   - Added render.yaml and Render deployment configuration for completely free hosting
   - Render recommended as best free alternative with permanent free PostgreSQL database
+  - Created comprehensive permanent hosting alternatives due to service deletion concerns
+  - Added Oracle Cloud Always Free setup guide with guaranteed permanent hosting
+  - Included self-hosting guide for complete control and zero monthly costs
+  - Oracle Cloud provides 2 VM instances and Oracle Database free forever with legal guarantee
 
 ## Previous Changes (August 15, 2025)
 - **EMCT Shop Drawing Log-RAQ Dashboard Enhancements**: Successfully implemented two critical changes:
