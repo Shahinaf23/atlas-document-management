@@ -844,4 +844,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+// Always use MemStorage for development to avoid database dependency issues
 export const storage = new MemStorage();
