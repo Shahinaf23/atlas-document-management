@@ -23,7 +23,7 @@ Railway handles full-stack Node.js applications with databases perfectly - exact
 3. **Railway automatically detects it's a Node.js app**
 4. **Click "Deploy"**
 
-**Note:** Railway will use Nixpacks to build your Node.js app automatically. The Dockerfile has been removed to prevent Python dependency conflicts.
+**Note:** Railway will use Nixpacks to build your Node.js app automatically. I've added `nixpacks.toml` to force Node.js-only builds and prevent any Docker/Python conflicts.
 
 ### Step 3: Add Database
 1. **In your Railway project dashboard**
@@ -49,7 +49,13 @@ Railway gives you a free domain like:
 ✅ **Dashboard shows all 490+ documents**  
 ✅ **Excel upload and processing works**  
 ✅ **All analytics and charts work**  
-✅ **Database stores user sessions**  
+✅ **Database stores user sessions**
+
+## If You Still Get Docker Errors:
+1. In Railway dashboard, go to your project settings
+2. Click "Variables" tab  
+3. Add: `NIXPACKS_NO_CACHE=1`
+4. Redeploy to force a clean Node.js build  
 
 ## Expected Timeline
 - **Deployment**: 2-3 minutes

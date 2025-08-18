@@ -23,9 +23,11 @@ build/
 
 # Ignore Python and Docker files since we're using Node.js only
 python-requirements.txt
-Dockerfile
+Dockerfile*
+docker-compose*
 scripts/
 processed_data/
+.cache/
 
 # Ignore deployment guides for other platforms
 VERCEL_FIX_GUIDE.md
