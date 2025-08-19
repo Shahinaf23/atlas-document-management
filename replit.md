@@ -51,6 +51,10 @@ The application follows a clear separation of concerns between frontend and back
   - Defined system requirements from minimum (4GB RAM, dual-core) to enterprise (32GB RAM, 8+ cores)
   - Detailed network, storage, and security specifications for on-premises deployment
   - Included complete production setup guide with database, SSL, and process management
+  - Created comprehensive Docker deployment configuration for Linux VMs
+  - Added docker-compose.yml with PostgreSQL, Nginx reverse proxy, and resource limits
+  - Optimized Dockerfile with Alpine Linux, security hardening, and health checks
+  - Included complete VM deployment guide with SSH access and container management
 
 ## Previous Changes (August 15, 2025)
 - **EMCT Shop Drawing Log-RAQ Dashboard Enhancements**: Successfully implemented two critical changes:
