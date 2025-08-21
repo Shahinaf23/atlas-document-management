@@ -12,14 +12,17 @@ RUN apk add --no-cache \
 # Copy package files for dependency installation
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --silent
+# Install ALL dependencies (including dev dependencies for build)
+RUN npm ci --silent
 
 # Copy application source code
 COPY . .
 
 # Build the application
 RUN npm run build
+
+# Remove dev dependencies after build to reduce image size
+RUN npm prune --production
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
