@@ -15,14 +15,24 @@ COPY package*.json ./
 # Install ALL dependencies (including dev dependencies for build)
 RUN npm ci --silent
 
+# Verify build tools are installed
+RUN npx vite --version || npm install -g vite@5.4.19
+RUN npx esbuild --version || npm install -g esbuild@0.25.0
+
 # Copy application source code
 COPY . .
 
-# Build the application
+# Set NODE_ENV to development for build process
+ENV NODE_ENV=development
+
+# Build the application with verbose output
 RUN npm run build
 
 # Remove dev dependencies after build to reduce image size
 RUN npm prune --production
+
+# Reset NODE_ENV to production
+ENV NODE_ENV=production
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
