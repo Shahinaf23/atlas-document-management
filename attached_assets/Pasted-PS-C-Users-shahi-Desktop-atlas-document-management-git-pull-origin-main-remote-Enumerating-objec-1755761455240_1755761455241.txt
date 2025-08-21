@@ -1,0 +1,43 @@
+PS C:\Users\shahi\Desktop\atlas-document-management> git pull origin main
+remote: Enumerating objects: 79, done.
+remote: Counting objects: 100% (79/79), done.
+remote: Compressing objects: 100% (33/33), done.
+remote: Total 70 (delta 39), reused 68 (delta 37), pack-reused 0 (from 0)
+Unpacking objects: 100% (70/70), 55.06 KiB | 220.00 KiB/s, done.
+From https://github.com/Shahinaf23/atlas-document-management
+ * branch            main       -> FETCH_HEAD
+   703554f..3a49a19  main       -> origin/main
+Updating 703554f..3a49a19
+error: Your local changes to the following files would be overwritten by merge:
+remote: Enumerating objects: 79, done.
+remote: Counting objects: 100% (79/79), done.
+remote: Compressing objects: 100% (33/33), done.
+remote: Total 70 (delta 39), reused 68 (delta 37), pack-reused 0 (from 0)
+Unpacking objects: 100% (70/70), 55.06 KiB | 220.00 KiB/s, done.
+From https://github.com/Shahinaf23/atlas-document-management
+ * branch            main       -> FETCH_HEAD
+   703554f..3a49a19  main       -> origin/main
+Updating 703554f..3a49a19
+error: Your local changes to the following files would be overwritten by merge:
+remote: Total 70 (delta 39), reused 68 (delta 37), pack-reused 0 (from 0)
+Unpacking objects: 100% (70/70), 55.06 KiB | 220.00 KiB/s, done.
+From https://github.com/Shahinaf23/atlas-document-management
+ * branch            main       -> FETCH_HEAD
+   703554f..3a49a19  main       -> origin/main
+Updating 703554f..3a49a19
+error: Your local changes to the following files would be overwritten by merge:
+From https://github.com/Shahinaf23/atlas-document-management
+ * branch            main       -> FETCH_HEAD
+   703554f..3a49a19  main       -> origin/main
+Updating 703554f..3a49a19
+error: Your local changes to the following files would be overwritten by merge:
+   703554f..3a49a19  main       -> origin/main
+Updating 703554f..3a49a19
+error: Your local changes to the following files would be overwritten by merge:
+error: Your local changes to the following files would be overwritten by merge:
+        package-lock.json
+        package-lock.json
+        package.json
+        server/db.ts
+Please commit your changes or stash them before you merge.
+Aborting
