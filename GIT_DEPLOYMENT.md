@@ -1,319 +1,358 @@
-# Git-Based Deployment to Linux VM
+# Git Deployment Guide - Atlas Document Management System
 
-## Complete Git Deployment Workflow
+## Pulling Changes to Local Development
 
-### Step 1: Prepare Git Repository
+### Scenario 1: First Time Setup (Clone Repository)
 
-**Option A: Push to GitHub (Recommended)**
+**If you haven't cloned the repository yet:**
+
 ```bash
-# From your local development machine
-cd atlas-document-management
-
-# Initialize git (if not already done)
-git init
-git add .
-git commit -m "Atlas Document Management System - Production Ready"
-
-# Add remote repository
-git remote add origin https://github.com/yourusername/atlas-document-management.git
-git push -u origin main
-```
-
-**Option B: Push to GitLab/Bitbucket**
-```bash
-# Same process, just different remote URL
-git remote add origin https://gitlab.com/yourusername/atlas-document-management.git
-git push -u origin main
-```
-
-### Step 2: Clone to Linux VM
-
-**SSH into your VM and clone:**
-```bash
-# Connect to your Linux VM
-ssh user@your-vm-ip
-
-# Clone the repository
+# Clone the repository to your local machine
 git clone https://github.com/yourusername/atlas-document-management.git
 cd atlas-document-management
 
-# Verify files are present
-ls -la
-```
-
-### Step 3: Install Dependencies on VM
-
-**Install Node.js and Docker:**
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install Node.js 18 LTS
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install Docker and Docker Compose
-sudo apt install docker.io docker-compose -y
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker $USER
-
-# Logout and login for docker group
-exit
-ssh user@your-vm-ip
-cd atlas-document-management
-```
-
-### Step 4: Deploy with Docker
-
-**Using Docker Compose (Recommended):**
-```bash
-# Build and start containers
-docker-compose up -d --build
-
-# Check status
-docker-compose ps
-docker-compose logs -f atlas-app
-```
-
-**Or Deploy Directly with Node.js:**
-```bash
 # Install dependencies
 npm install
 
-# Create production environment file
+# Create local environment file
 cp .env.example .env
+
+# Edit .env with your local settings
 nano .env
-# Edit: NODE_ENV=production, PORT=5000, etc.
-
-# Build application
-npm run build
-
-# Start with PM2 (recommended for production)
-sudo npm install -g pm2
-pm2 start npm --name "atlas-app" -- start
-pm2 startup
-pm2 save
 ```
 
-### Step 5: Configure Environment
-
-**Create production .env file:**
+**Example local .env file:**
 ```bash
-# Create environment file
-nano .env
-```
-
-**Add production settings:**
-```
-NODE_ENV=production
+NODE_ENV=development
 PORT=5000
-SESSION_SECRET=your-super-secure-session-secret-here
+DATABASE_URL=postgresql://username:password@localhost:5432/atlas_local
+SESSION_SECRET=your-local-secret-key
 
-# Optional: Database (if using PostgreSQL)
-DATABASE_URL=postgresql://atlas_user:password@localhost:5432/atlas_db
-
-# Security settings
-HELMET_ENABLED=true
-RATE_LIMIT_ENABLED=true
+# Optional: Use in-memory storage for development
+USE_MEMORY_STORAGE=true
 ```
 
-### Step 6: Setup Firewall and Network Access
+### Scenario 2: Update Existing Local Repository
 
-**Configure UFW firewall:**
+**If you already have the repository locally:**
+
 ```bash
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow ssh
-sudo ufw allow 5000
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw enable
+# Navigate to your project directory
+cd atlas-document-management
+
+# Check current status
+git status
+
+# Pull latest changes from main branch
+git pull origin main
+
+# Update dependencies (if package.json changed)
+npm install
+
+# Restart your development server
+npm run dev
 ```
 
-**Configure Nginx reverse proxy (optional):**
+### Scenario 3: Handle Merge Conflicts
+
+**If you have local changes that conflict:**
+
 ```bash
-# Install Nginx
-sudo apt install nginx
+# Check what files have conflicts
+git status
 
-# Create Nginx configuration
-sudo nano /etc/nginx/sites-available/atlas
+# Option A: Stash your changes temporarily
+git stash
+git pull origin main
+git stash pop  # Reapply your changes
+
+# Option B: Commit your changes first
+git add .
+git commit -m "My local changes"
+git pull origin main
+
+# If conflicts occur, resolve them manually:
+# 1. Edit conflicted files
+# 2. Remove conflict markers (<<<<<<< ======= >>>>>>>)
+# 3. Stage resolved files
+git add resolved-file.js
+git commit -m "Resolved merge conflicts"
 ```
 
-**Nginx config content:**
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com your-vm-ip;
+### Scenario 4: Reset to Latest Remote Version
 
-    client_max_body_size 100M;
+**If you want to discard all local changes:**
 
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-**Enable Nginx site:**
 ```bash
-sudo ln -s /etc/nginx/sites-available/atlas /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+# WARNING: This will delete all your local changes
+git fetch origin
+git reset --hard origin/main
+
+# Clean untracked files
+git clean -fd
+
+# Update dependencies
+npm install
 ```
 
-## Future Updates Workflow
+## Development Workflow
 
-### Easy Git-Based Updates
+### Daily Development Process
 
-**Update from Git repository:**
 ```bash
-# SSH into VM
-ssh user@your-vm-ip
+# 1. Start your day by pulling latest changes
+git pull origin main
+
+# 2. Create a new branch for your feature
+git checkout -b feature/new-dashboard
+
+# 3. Make your changes and test locally
+npm run dev
+
+# 4. Stage and commit your changes
+git add .
+git commit -m "Add new dashboard component"
+
+# 5. Push your branch to remote
+git push origin feature/new-dashboard
+
+# 6. Create pull request on GitHub/GitLab
+# 7. After review, merge to main branch
+```
+
+### Keeping Your Fork Updated
+
+**If you forked the repository:**
+
+```bash
+# Add upstream remote (original repository)
+git remote add upstream https://github.com/original-owner/atlas-document-management.git
+
+# Fetch latest changes from upstream
+git fetch upstream
+
+# Switch to main branch
+git checkout main
+
+# Merge upstream changes
+git merge upstream/main
+
+# Push updated main to your fork
+git push origin main
+```
+
+## Environment-Specific Configurations
+
+### Local Development Setup
+
+```bash
+# After pulling changes, ensure your local environment is configured:
+
+# 1. Check Node.js version
+node --version  # Should be 18.x or higher
+
+# 2. Install/update dependencies
+npm install
+
+# 3. Set up local database (if using PostgreSQL)
+createdb atlas_local
+npm run db:push
+
+# 4. Start development server
+npm run dev
+```
+
+### Production Server Update
+
+**Updating Atlas on your Ubuntu server:**
+
+```bash
+# SSH into your server
+ssh username@your-server-ip
+
+# Navigate to application directory
 cd atlas-document-management
 
 # Pull latest changes
 git pull origin main
 
-# If using Docker
-docker-compose down
-docker-compose up -d --build
+# Update dependencies
+npm install
 
-# If using PM2
-npm install  # If package.json changed
+# Rebuild application
 npm run build
+
+# Update database schema (if needed)
+npm run db:push
+
+# Restart application with PM2
 pm2 restart atlas-app
+
+# Check application status
+pm2 status
+pm2 logs atlas-app
 ```
 
-### Automated Deployment Script
+## Git Commands Reference
 
-**Create update script (update-atlas.sh):**
+### Basic Operations
 ```bash
+# Check repository status
+git status
+
+# View commit history
+git log --oneline
+
+# See what changed in files
+git diff
+
+# View remote repositories
+git remote -v
+
+# Check current branch
+git branch
+```
+
+### Branch Management
+```bash
+# Create and switch to new branch
+git checkout -b new-feature
+
+# Switch between branches
+git checkout main
+git checkout feature-branch
+
+# List all branches
+git branch -a
+
+# Delete local branch
+git branch -d feature-branch
+
+# Delete remote branch
+git push origin --delete feature-branch
+```
+
+### Undo Changes
+```bash
+# Undo last commit (keep changes)
+git reset --soft HEAD~1
+
+# Undo last commit (discard changes)
+git reset --hard HEAD~1
+
+# Undo specific file changes
+git checkout -- filename.js
+
+# Revert a specific commit
+git revert commit-hash
+```
+
+## Troubleshooting Common Issues
+
+### Issue 1: Permission Denied
+```bash
+# If you get permission denied errors:
+# Check your SSH key setup
+ssh -T git@github.com
+
+# Or use HTTPS instead of SSH
+git remote set-url origin https://github.com/username/repo.git
+```
+
+### Issue 2: Merge Conflicts
+```bash
+# When you see conflict markers like:
+# <<<<<<< HEAD
+# Your changes
+# =======
+# Incoming changes
+# >>>>>>> branch-name
+
+# 1. Edit the file to resolve conflicts
+# 2. Remove the conflict markers
+# 3. Stage the resolved file
+git add resolved-file.js
+git commit -m "Resolved merge conflict"
+```
+
+### Issue 3: Outdated Dependencies
+```bash
+# After pulling changes, if app won't start:
+# Delete node_modules and reinstall
+rm -rf node_modules
+npm install
+
+# Clear npm cache if needed
+npm cache clean --force
+```
+
+### Issue 4: Database Schema Changes
+```bash
+# If database errors occur after pulling:
+# Apply schema migrations
+npm run db:push
+
+# Or reset database (development only)
+npm run db:reset
+npm run db:push
+```
+
+## Automated Update Script
+
+**Create an update script for easy deployment:**
+
+```bash
+# Create update.sh in your project root
+cat > update.sh << 'EOF'
 #!/bin/bash
 echo "Updating Atlas Document Management System..."
 
-# Pull latest code
+# Pull latest changes
 git pull origin main
 
-# Check if package.json changed
-if git diff --name-only HEAD@{1} HEAD | grep -q "package.json"; then
-    echo "Dependencies changed, reinstalling..."
-    npm install
-fi
+# Update dependencies
+npm install
 
-# Rebuild and restart
+# Rebuild application
 npm run build
 
-# Restart based on deployment method
-if command -v docker-compose &> /dev/null; then
-    echo "Restarting Docker containers..."
-    docker-compose down
-    docker-compose up -d --build
-elif command -v pm2 &> /dev/null; then
-    echo "Restarting PM2 process..."
+# Apply database changes
+npm run db:push
+
+# Restart PM2 (if in production)
+if command -v pm2 &> /dev/null; then
     pm2 restart atlas-app
+    echo "Application restarted with PM2"
 else
-    echo "Manual restart required"
+    echo "Restart your development server with: npm run dev"
 fi
 
-echo "Update complete!"
+echo "Update completed successfully!"
+EOF
+
+chmod +x update.sh
+
+# Use the script
+./update.sh
 ```
 
-**Make script executable:**
-```bash
-chmod +x update-atlas.sh
+## Best Practices
 
-# Run updates
-./update-atlas.sh
-```
+### Before Pulling Changes
+1. **Commit or stash** your local changes
+2. **Check current branch** - ensure you're on the right branch
+3. **Backup important work** - especially before major updates
 
-## Access Your Deployed Application
+### After Pulling Changes
+1. **Review changes** - check what was updated
+2. **Update dependencies** - run `npm install`
+3. **Test locally** - ensure everything works
+4. **Update environment** - check if .env needs updates
 
-**Your Atlas app will be accessible at:**
-- **Direct access**: `http://your-vm-ip:5000`
-- **Through Nginx**: `http://your-vm-ip` (port 80)
-- **With domain**: `http://your-domain.com`
+### For Production Updates
+1. **Test in development** first
+2. **Backup database** before updating
+3. **Use zero-downtime deployment** strategies
+4. **Monitor logs** after deployment
 
-## Monitoring and Maintenance
-
-### Health Checks
-```bash
-# Check application status
-curl http://localhost:5000/api/health
-
-# Check Docker containers
-docker-compose ps
-
-# Check PM2 processes
-pm2 status
-
-# Check system resources
-htop
-df -h
-```
-
-### Backup Strategy
-```bash
-# Backup application data
-tar -czf atlas-backup-$(date +%Y%m%d).tar.gz attached_assets/
-
-# If using PostgreSQL
-docker-compose exec atlas-db pg_dump -U atlas_user atlas_db > atlas-db-backup-$(date +%Y%m%d).sql
-
-# Or with local PostgreSQL
-sudo -u postgres pg_dump atlas_db > atlas-db-backup-$(date +%Y%m%d).sql
-```
-
-### Log Management
-```bash
-# View application logs
-docker-compose logs -f atlas-app  # Docker
-pm2 logs atlas-app               # PM2
-
-# View Nginx logs
-sudo tail -f /var/log/nginx/access.log
-sudo tail -f /var/log/nginx/error.log
-```
-
-## Security Best Practices
-
-### SSL Certificate (Production)
-```bash
-# Install Certbot
-sudo apt install certbot python3-certbot-nginx
-
-# Get SSL certificate
-sudo certbot --nginx -d your-domain.com
-
-# Auto-renewal
-sudo crontab -e
-# Add: 0 12 * * * /usr/bin/certbot renew --quiet
-```
-
-### System Security
-```bash
-# Keep system updated
-sudo apt update && sudo apt upgrade -y
-
-# Configure automatic security updates
-sudo apt install unattended-upgrades
-sudo dpkg-reconfigure -plow unattended-upgrades
-```
-
-## Benefits of Git-Based Deployment
-
-✅ **Version control** - Track all changes and rollback if needed  
-✅ **Easy updates** - Simple `git pull` to get latest version  
-✅ **Team collaboration** - Multiple developers can contribute  
-✅ **Backup** - Code is safely stored in Git repository  
-✅ **Deployment history** - See exactly what changed when  
-✅ **Branch management** - Test features before production  
-
-Your Atlas Document Management System with all 490+ documents and Excel processing will be deployed professionally with easy update capabilities and full version control.
+This workflow ensures your local Atlas development environment stays synchronized with the latest changes while maintaining a stable development process.
